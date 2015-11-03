@@ -146,6 +146,9 @@ class ImagePixelSetter(object):
             color = (color[0], color[1], color[2], 255)
         self.pixels[x, y] = color
 
+    def _paste(self, source, location):
+        self.img.paste(source, location, source)
+
     def complete(self):
         try:
             self.img.save(self.filename)

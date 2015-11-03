@@ -7,6 +7,7 @@ Jython
 import numpy
 import sys
 import time
+from PIL import Image
 from worldengine.common import get_verbose
 
 
@@ -467,7 +468,13 @@ def _draw_jungle(pixels, x, y, w, h):
     pixels[x - 1, y + 1] = c2
     pixels[x - 0, y + 1] = c2
 
-
+def _stamp(image, stamp, x, y, w, h):
+    stamp = stamp.resize([int(w), int(h)],Image.ANTIALIAS)
+    top = x - int(w/2)
+    left = y - int(h/2)
+    pos = (top, left)
+    image._paste(stamp, (top, left))
+    
 def _draw_savanna(pixels, x, y):
     b = (x ** int(y / 5) + x * 23 + y * 37 + (x * y) * 13) % 75
     r = 255 - b
@@ -561,6 +568,14 @@ def draw_ancientmap(world, target, resize_factor=1,
 
     if verbose:
         start_time = time.time()
+
+    mountain1 = Image.open("worldengine/data/mountain1.png")
+    mountain2 = Image.open("worldengine/data/mountain2.png")
+    mountain3 = Image.open("worldengine/data/mountain3.png")
+    mountain4 = Image.open("worldengine/data/mountain4.png")
+
+    Mountain = [mountain1, mountain2, mountain3, mountain4]
+    
 
     land_color = (
         181, 166, 127, 255)  # TODO: Put this in the argument list too??
@@ -902,7 +917,9 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        _draw_a_mountain(target, x, y, w=w, h=h)
+                        #_draw_a_mountain(target, x, y, w=w, h=h)
+                        m = int(4 * rng.random_sample())
+                        _stamp(target, Mountain[m], x, y, w=int(h*2), h=h*3)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r, action=unset_mask)
         if verbose:
