@@ -471,7 +471,7 @@ def _draw_jungle(pixels, x, y, w, h):
 def _stamp(image, stamp, x, y, w, h):
     stamp = stamp.resize([int(w), int(h)],Image.ANTIALIAS)
     top = x - int(w/2)
-    left = y - int(h/2)
+    left = y - int(h)
     pos = (top, left)
     image._paste(stamp, (top, left))
     
@@ -568,14 +568,53 @@ def draw_ancientmap(world, target, resize_factor=1,
 
     if verbose:
         start_time = time.time()
+    print("Loading mountain bitmaps")
 
-    mountain1 = Image.open("worldengine/data/mountain1.png")
-    mountain2 = Image.open("worldengine/data/mountain2.png")
-    mountain3 = Image.open("worldengine/data/mountain3.png")
-    mountain4 = Image.open("worldengine/data/mountain4.png")
+    Mountains = [Image.open("worldengine/data/mountain1.png"),
+                 Image.open("worldengine/data/mountain2.png"),
+                 Image.open("worldengine/data/mountain3.png"),
+                 Image.open("worldengine/data/mountain4.png"),
+                 Image.open("worldengine/data/mountain5.png")]
 
-    Mountain = [mountain1, mountain2, mountain3, mountain4]
+    print("Loading hill bitmaps")
+
+    Hills = [Image.open("worldengine/data/hill1.png"),
+             Image.open("worldengine/data/hill2.png"),
+             Image.open("worldengine/data/hill3.png")]
+
+    print("Loading desert bitmaps")
     
+    Deserts = [Image.open("worldengine/data/desert1.png"),
+               Image.open("worldengine/data/desert2.png"),
+               Image.open("worldengine/data/desert3.png")]
+
+    Decids = [Image.open("worldengine/data/decid1.png"),
+              Image.open("worldengine/data/decid2.png"),
+              Image.open("worldengine/data/decid3.png"),
+              Image.open("worldengine/data/decid4.png"),
+              Image.open("worldengine/data/decid5.png"),
+              Image.open("worldengine/data/decid6.png")]
+
+    Pines = [Image.open("worldengine/data/pine1.png"),
+             Image.open("worldengine/data/pine2.png"),
+             Image.open("worldengine/data/pine3.png"),
+             Image.open("worldengine/data/pine4.png"),
+             Image.open("worldengine/data/pine5.png"),
+             Image.open("worldengine/data/pine6.png")]
+
+    Jungles = [Image.open("worldengine/data/palm1.png"),
+               Image.open("worldengine/data/palm2.png"),
+               Image.open("worldengine/data/palm3.png"),
+               Image.open("worldengine/data/palm4.png"),
+               Image.open("worldengine/data/palm5.png"),
+               Image.open("worldengine/data/palm6.png")]
+
+    DryTropicals = [Image.open("worldengine/data/DT1.png"),
+                    Image.open("worldengine/data/DT2.png"),
+                    Image.open("worldengine/data/DT3.png"),
+                    Image.open("worldengine/data/DT4.png"),
+                    Image.open("worldengine/data/DT5.png"),
+                    Image.open("worldengine/data/DT6.png")]
 
     land_color = (
         181, 166, 127, 255)  # TODO: Put this in the argument list too??
@@ -807,13 +846,15 @@ def draw_ancientmap(world, target, resize_factor=1,
         for y in range(resize_factor * world.height):
             for x in range(resize_factor * world.width):
                 if hot_desert_mask[y, x] > 0:
-                    w = 8
+                    w = 6
                     h = 2
-                    r = 9
+                    r = 6
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        _draw_hot_desert(target, x, y, w=w, h=h)
+                        #_draw_hot_desert(target, x, y, w=w, h=h)
+                        d = int(len(Deserts) * rng.random_sample())
+                        _stamp(target, Deserts[d], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      action=unset_hot_desert_mask)
@@ -828,7 +869,9 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        _draw_boreal_forest(target, x, y, w=w, h=h)
+                        #_draw_boreal_forest(target, x, y, w=w, h=h)
+                        m = int(len(Pines) * rng.random_sample())
+                        _stamp(target, Pines[m], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
@@ -845,9 +888,11 @@ def draw_ancientmap(world, target, resize_factor=1,
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
                         if rng.random_sample() <= .5:
-                            _draw_temperate_forest1(target, x, y, w=w, h=h)
+                            m = int(len(Pines) * rng.random_sample())
+                            _stamp(target, Pines[m], x, y, w=w*3, h=h*3)
                         else:
-                            _draw_temperate_forest2(target, x, y, w=w, h=h)
+                            m = int(len(Decids) * rng.random_sample())
+                            _stamp(target, Decids[m], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
@@ -863,7 +908,8 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        _draw_warm_temperate_forest(target, x, y, w=w, h=h)
+                        m = int(len(Decids) * rng.random_sample())
+                        _stamp(target, Decids[m], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
@@ -879,7 +925,9 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        _draw_tropical_dry_forest(target, x, y, w=w, h=h)
+                        #_draw_tropical_dry_forest(target, x, y, w=w, h=h)
+                        m = int(len(DryTropicals) * rng.random_sample())
+                        _stamp(target, DryTropicals[m], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
@@ -895,7 +943,9 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        _draw_jungle(target, x, y, w=w, h=h)
+                        #_draw_jungle(target, x, y, w=w, h=h)
+                        m = int(len(Jungles) * rng.random_sample())
+                        _stamp(target, Jungles[m], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      action=unset_jungle_mask)
@@ -909,17 +959,28 @@ def draw_ancientmap(world, target, resize_factor=1,
             start_time = time.time()
         for y in range(resize_factor * world.height):
             for x in range(resize_factor * world.width):
-                if mountains_mask[y, x] > 0:
-                    w = mountains_mask[y, x]
-                    h = 3 + int(world.level_of_mountain(
-                        (int(x / resize_factor), int(y / resize_factor))))
+                if mountains_mask[y, x] > 8.5:
+                    h = int(mountains_mask[y, x] * 2 / 3)
+                    w = int(h * 3 / 2)
                     r = max(int(w / 3 * 2), h)
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
                         #_draw_a_mountain(target, x, y, w=w, h=h)
-                        m = int(4 * rng.random_sample())
-                        _stamp(target, Mountain[m], x, y, w=int(h*2), h=h*3)
+                        m = int(len(Mountains) * rng.random_sample())
+                        _stamp(target, Mountains[m], x, y, w=w*2, h=h*2)
+                        world.on_tiles_around_factor(resize_factor, (x, y),
+                                                     radius=r, action=unset_mask)
+                elif mountains_mask[y, x] > 0:
+                    h = int(mountains_mask[y, x] * 1 / 2)
+                    w = int(h * 3)
+                    r = max(int(w / 3 * 2), h)
+                    if len(world.tiles_around_factor(resize_factor, (x, y),
+                                                     radius=r,
+                                                     predicate=on_border)) <= 2:
+                        
+                        m = int(len(Hills) * rng.random_sample())
+                        _stamp(target, Hills[m], x, y, w=w*2, h=h*2)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r, action=unset_mask)
         if verbose:
