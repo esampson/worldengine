@@ -149,6 +149,12 @@ class ImagePixelSetter(object):
     def _paste(self, source, location):
         self.img.paste(source, location, source)
 
+    def _fill(self, source, mask):
+        self.img.paste(source, (0,0), mask)
+
+    def _size(self):
+        return self.img.size
+
     def complete(self):
         try:
             self.img.save(self.filename)

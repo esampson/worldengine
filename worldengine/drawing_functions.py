@@ -124,6 +124,22 @@ def _mask(world, predicate, factor):
                     _mask[y, x] = v
     return _mask
 
+def _createmask(world, predicate, factor):
+    width = world.width * factor
+    height = world.height * factor
+    _mask = Image.new("RGBA", (width,height))
+    for y in range(height):
+        for x in range(width):
+            xf = int(x / factor)
+            yf = int(y / factor)
+            if predicate((xf, yf)):
+                v = len(
+                    world.tiles_around((xf, yf), radius=1,
+                                       predicate=predicate))
+                if v > 5:
+                    _mask.putpixel((x,y),(0,0,0,255))
+    return _mask
+
 
 def _find_boreal_forest_mask(world, factor):
     return _mask(world, predicate=world.is_boreal_forest, factor=factor)
@@ -470,10 +486,29 @@ def _draw_jungle(pixels, x, y, w, h):
 
 def _stamp(image, stamp, x, y, w, h):
     stamp = stamp.resize([int(w), int(h)],Image.ANTIALIAS)
-    top = x - int(w/2)
-    left = y - int(h)
-    pos = (top, left)
-    image._paste(stamp, (top, left))
+    left = x - int(w/2)
+    top = y - int(h)
+    image._paste(stamp, (left, top))
+
+def _texture(image, texture, mask):
+    size = image._size()
+    width = size[0]
+    height = size[1]
+    width = int(width)
+    height = int(height)
+    tx = Image.new("RGBA", (width,height))
+    xcount = int(width / texture.size[0])
+    if xcount < float(width) / texture.size[0]:
+        xcount = xcount + 1
+    ycount = int(height / texture.size[1])
+    if ycount != float(height) / texture.size[1]:
+        ycount = ycount + 1
+    for x in range(0,xcount):
+        for y in range(0,ycount):
+            left = x * texture.size[0]
+            top = y * texture.size[1]
+            tx.paste(texture, (left, top))
+    image._fill(tx, mask)
     
 def _draw_savanna(pixels, x, y):
     b = (x ** int(y / 5) + x * 23 + y * 37 + (x * y) * 13) % 75
@@ -563,7 +598,7 @@ def _draw_a_mountain(pixels, x, y, w=3, h=3):
 def draw_ancientmap(world, target, resize_factor=1,
                     sea_color=(212, 198, 169, 255),
                     draw_biome = True, draw_rivers = True, draw_mountains = True,
-                    draw_outer_land_border = False, verbose=get_verbose()):
+                    draw_outer_land_border = False, verbose = False):
     rng = numpy.random.RandomState(world.seed)  # create our own random generator
 
     if verbose:
@@ -616,6 +651,18 @@ def draw_ancientmap(world, target, resize_factor=1,
                     Image.open("worldengine/data/DT5.png"),
                     Image.open("worldengine/data/DT6.png")]
 
+    Ice = Image.open("worldengine/data/ice.png")
+
+    Tundra = Image.open("worldengine/data/tundra.png")
+
+    Parklands = Image.open("worldengine/data/parklands.png")
+
+    Steppe = Image.open("worldengine/data/steppe.png")
+
+    Chaparral = Image.open("worldengine/data/chaparral.png")
+
+    Savanna = Image.open("worldengine/data/savanna.png")
+
     land_color = (
         181, 166, 127, 255)  # TODO: Put this in the argument list too??
     borders = _find_land_borders(world, resize_factor)
@@ -636,16 +683,23 @@ def draw_ancientmap(world, target, resize_factor=1,
         # jungle is actually Tropical Rain Forest and Tropical Seasonal Forest
         jungle_mask = _mask(world, world.is_jungle,
                             resize_factor)
-        tundra_mask = _mask(world, world.is_tundra, resize_factor)
+        #tundra_mask = _mask(world, world.is_tundra, resize_factor)
         # savanna is actually Tropical semi-arid
-        savanna_mask = _mask(world, world.is_savanna, resize_factor)
-        cold_parklands_mask = _mask(world, world.is_cold_parklands, resize_factor)
-        steppe_mask = _mask(world, world.is_steppe, resize_factor)
+        #savanna_mask = _mask(world, world.is_savanna, resize_factor)
+        #cold_parklands_mask = _mask(world, world.is_cold_parklands, resize_factor)
+        #steppe_mask = _mask(world, world.is_steppe, resize_factor)
         cool_desert_mask = _mask(world, world.is_cool_desert, resize_factor)
-        chaparral_mask = _mask(world, world.is_chaparral, resize_factor)
+        #chaparral_mask = _mask(world, world.is_chaparral, resize_factor)
         hot_desert_mask = _mask(world, world.is_hot_desert, resize_factor)
         rock_desert_mask = _mask(world, world.is_hot_desert, resize_factor)  # TODO: add is_desert_mask
 
+        ice_mask = _createmask(world, world.is_iceland, resize_factor)
+        tundra_mask = _createmask(world, world.is_tundra, resize_factor)
+        parklands_mask = _createmask(world, world.is_cold_parklands, resize_factor)
+        steppe_mask = _createmask(world, world.is_steppe, resize_factor)
+        chaparral_mask = _createmask(world, world.is_chaparral, resize_factor)
+        savanna_mask = _createmask(world, world.is_savanna, resize_factor)
+        
     def unset_mask(pos):
         x, y = pos
         mountains_mask[y, x] = 0
@@ -775,57 +829,14 @@ def draw_ancientmap(world, target, resize_factor=1,
             "...drawing_functions.draw_oldmap_on_pixel: anti alias " +
             "Elapsed time " + str(elapsed_time) + " seconds.")
 
-    # Draw glacier
+    # Draw texture biomes
     if draw_biome:
-        if verbose:
-            start_time = time.time()
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
-                if not borders[y, x] and world.is_iceland(
-                        (int(x / resize_factor), int(y / resize_factor))):
-                    _draw_glacier(target, x, y)
-        if verbose:
-            elapsed_time = time.time() - start_time
-            print(
-                "...drawing_functions.draw_oldmap_on_pixel: draw glacier " +
-                "Elapsed time " + str(elapsed_time) + " seconds.")
-
-        # Draw tundra
-        if verbose:
-            start_time = time.time()
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
-                if tundra_mask[y, x] > 0:
-                    _draw_tundra(target, x, y)
-        if verbose:
-            elapsed_time = time.time() - start_time
-            print(
-                "...drawing_functions.draw_oldmap_on_pixel: draw tundra " +
-                "Elapsed time " + str(elapsed_time) + " seconds.")
-
-        # Draw cold parklands
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
-                if cold_parklands_mask[y, x] > 0:
-                    _draw_cold_parklands(target, x, y)
-
-        # Draw steppes
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
-                if steppe_mask[y, x] > 0:
-                    _draw_steppe(target, x, y)
-
-        # Draw chaparral
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
-                if chaparral_mask[y, x] > 0:
-                    _draw_chaparral(target, x, y)
-
-        # Draw savanna
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
-                if savanna_mask[y, x] > 0:
-                    _draw_savanna(target, x, y)
+        _texture(target, Ice, ice_mask)
+        _texture(target, Tundra, tundra_mask)
+        _texture(target, Parklands, parklands_mask)
+        _texture(target, Steppe, steppe_mask)
+        _texture(target, Chaparral, chaparral_mask)
+        _texture(target, Savanna, savanna_mask)
 
         # Draw cool desert
         for y in range(resize_factor * world.height):
@@ -842,7 +853,7 @@ def draw_ancientmap(world, target, resize_factor=1,
                                                      radius=r,
                                                      action=unset_cool_desert_mask)
 
-        # Draw hot desert
+        # Draw icons
         for y in range(resize_factor * world.height):
             for x in range(resize_factor * world.width):
                 if hot_desert_mask[y, x] > 0:
@@ -852,16 +863,12 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        #_draw_hot_desert(target, x, y, w=w, h=h)
                         d = int(len(Deserts) * rng.random_sample())
                         _stamp(target, Deserts[d], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      action=unset_hot_desert_mask)
-
-        # Draw boreal forest
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
+                        
                 if boreal_forest_mask[y, x] > 0:
                     w = 4
                     h = 5
@@ -869,7 +876,6 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        #_draw_boreal_forest(target, x, y, w=w, h=h)
                         m = int(len(Pines) * rng.random_sample())
                         _stamp(target, Pines[m], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(
@@ -877,9 +883,6 @@ def draw_ancientmap(world, target, resize_factor=1,
                             radius=r,
                             action=unset_boreal_forest_mask)
 
-        # Draw temperate forest
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
                 if temperate_forest_mask[y, x] > 0:
                     w = 4
                     h = 5
@@ -898,9 +901,6 @@ def draw_ancientmap(world, target, resize_factor=1,
                             radius=r,
                             action=unset_temperate_forest_mask)
 
-        # Draw warm temperate forest
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
                 if warm_temperate_forest_mask[y, x] > 0:
                     w = 4
                     h = 5
@@ -915,9 +915,6 @@ def draw_ancientmap(world, target, resize_factor=1,
                             radius=r,
                             action=unset_warm_temperate_forest_mask)
 
-        # Draw dry tropical forest
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
                 if tropical_dry_forest_mask[y, x] > 0:
                     w = 4
                     h = 5
@@ -925,17 +922,12 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        #_draw_tropical_dry_forest(target, x, y, w=w, h=h)
                         m = int(len(DryTropicals) * rng.random_sample())
                         _stamp(target, DryTropicals[m], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
                             action=unset_tropical_dry_forest_mask)
-
-        # Draw jungle
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
                 if jungle_mask[y, x] > 0:
                     w = 4
                     h = 5
@@ -943,7 +935,6 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        #_draw_jungle(target, x, y, w=w, h=h)
                         m = int(len(Jungles) * rng.random_sample())
                         _stamp(target, Jungles[m], x, y, w=w*3, h=h*3)
                         world.on_tiles_around_factor(resize_factor, (x, y),
@@ -966,7 +957,6 @@ def draw_ancientmap(world, target, resize_factor=1,
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        #_draw_a_mountain(target, x, y, w=w, h=h)
                         m = int(len(Mountains) * rng.random_sample())
                         _stamp(target, Mountains[m], x, y, w=w*2, h=h*2)
                         world.on_tiles_around_factor(resize_factor, (x, y),
