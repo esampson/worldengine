@@ -133,176 +133,8 @@ def _createmask(world, predicate, factor):
             xf = int(x / factor)
             yf = int(y / factor)
             if predicate((xf, yf)):
-                v = len(
-                    world.tiles_around((xf, yf), radius=1,
-                                       predicate=predicate))
-                if v > 5:
-                    _mask.putpixel((x,y),(0,0,0,255))
-    return _mask
-
-
-def _find_boreal_forest_mask(world, factor):
-    return _mask(world, predicate=world.is_boreal_forest, factor=factor)
-
-
-def _find_temperate_forest_mask(world, factor):
-    return _mask(world, predicate=world.is_temperate_forest, factor=factor)
-
-
-def _find_warm_temperate_forest_mask(world, factor):
-    return _mask(world, predicate=world.is_warm_temperate_forest,
-                 factor=factor)
-
-
-def _find_tropical_dry_forest_mask(world, factor):
-    return _mask(world, predicate=world.is_tropical_dry_forest, factor=factor)
-
-
-def _draw_glacier(pixels, x, y):
-    rg = 255 - (x ** int(y / 5) + x * 23 + y * 37 + (x * y) * 13) % 75
-    pixels[x, y] = (rg, rg, 255, 255)
-
-
-def _draw_tundra(pixels, x, y):
-    b = (x ** int(y / 5) + x * 23 + y * 37 + (x * y) * 13) % 75
-    r = 166 - b
-    g = 148 - b
-    b = 75 - b
-    pixels[x, y] = (r, g, b, 255)
-
-
-def _draw_cold_parklands(pixels, x, y):
-    b = (x ** int(y / 5) + x * 23 + y * 37 + (x * y) * 13) % 75
-    r = 105 - b
-    g = 96 - b
-    b = 38 - int(b / 2)
-    pixels[x, y] = (r, g, b, 255)
-
-
-def _draw_boreal_forest(pixels, x, y, w, h):
-    c = (0, 32, 0, 255)
-    c2 = (0, 64, 0, 255)
-    pixels[x + 0, y - 4] = c
-    pixels[x + 0, y - 3] = c
-    pixels[x - 1, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x - 1, y - 1] = c
-    pixels[x + 1, y - 1] = c
-    pixels[x - 2, y + 0] = c
-    pixels[x + 1, y + 0] = c
-    pixels[x + 2, y + 0] = c
-    pixels[x - 2, y + 1] = c
-    pixels[x + 2, y + 1] = c
-    pixels[x - 3, y + 2] = c
-    pixels[x - 1, y + 2] = c
-    pixels[x + 3, y + 2] = c
-    pixels[x - 3, y + 3] = c
-    pixels[x - 2, y + 3] = c
-    pixels[x - 1, y + 3] = c
-    pixels[x - 0, y + 3] = c
-    pixels[x + 1, y + 3] = c
-    pixels[x + 2, y + 3] = c
-    pixels[x + 3, y + 3] = c
-    pixels[x - 0, y + 4] = c
-
-    pixels[x + 0, y - 2] = c2
-    pixels[x + 0, y - 1] = c2
-    pixels[x - 1, y - 0] = c2
-    pixels[x - 0, y - 0] = c2
-    pixels[x - 1, y + 1] = c2
-    pixels[x - 0, y + 1] = c2
-    pixels[x + 1, y + 1] = c2
-    pixels[x - 2, y + 2] = c2
-    pixels[x - 0, y + 2] = c2
-    pixels[x + 1, y + 2] = c2
-    pixels[x + 2, y + 2] = c2
-
-
-def _draw_temperate_forest1(pixels, x, y, w, h):
-    c = (0, 64, 0, 255)
-    c2 = (0, 96, 0, 255)
-    pixels[x + 0, y - 4] = c
-    pixels[x + 0, y - 3] = c
-    pixels[x - 1, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x - 1, y - 1] = c
-    pixels[x + 1, y - 1] = c
-    pixels[x - 2, y + 0] = c
-    pixels[x + 1, y + 0] = c
-    pixels[x + 2, y + 0] = c
-    pixels[x - 2, y + 1] = c
-    pixels[x + 2, y + 1] = c
-    pixels[x - 3, y + 2] = c
-    pixels[x - 1, y + 2] = c
-    pixels[x + 3, y + 2] = c
-    pixels[x - 3, y + 3] = c
-    pixels[x - 2, y + 3] = c
-    pixels[x - 1, y + 3] = c
-    pixels[x - 0, y + 3] = c
-    pixels[x + 1, y + 3] = c
-    pixels[x + 2, y + 3] = c
-    pixels[x + 3, y + 3] = c
-    pixels[x - 0, y + 4] = c
-
-    pixels[x + 0, y - 2] = c2
-    pixels[x + 0, y - 1] = c2
-    pixels[x - 1, y - 0] = c2
-    pixels[x - 0, y - 0] = c2
-    pixels[x - 1, y + 1] = c2
-    pixels[x - 0, y + 1] = c2
-    pixels[x + 1, y + 1] = c2
-    pixels[x - 2, y + 2] = c2
-    pixels[x - 0, y + 2] = c2
-    pixels[x + 1, y + 2] = c2
-    pixels[x + 2, y + 2] = c2
-
-
-def _draw_temperate_forest2(pixels, x, y, w, h):
-    c = (0, 64, 0, 255)
-    c2 = (0, 112, 0, 255)
-    pixels[x - 1, y - 4] = c
-    pixels[x - 0, y - 4] = c
-    pixels[x + 1, y - 4] = c
-    pixels[x - 2, y - 3] = c
-    pixels[x - 1, y - 3] = c
-    pixels[x + 2, y - 3] = c
-    pixels[x - 2, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x + 2, y - 2] = c
-    pixels[x - 2, y - 1] = c
-    pixels[x + 2, y - 1] = c
-    pixels[x - 2, y - 0] = c
-    pixels[x - 1, y - 0] = c
-    pixels[x + 2, y - 0] = c
-    pixels[x - 2, y + 1] = c
-    pixels[x + 1, y + 1] = c
-    pixels[x + 2, y + 1] = c
-    pixels[x - 1, y + 2] = c
-    pixels[x - 0, y + 2] = c
-    pixels[x + 1, y + 2] = c
-    pixels[x - 0, y + 3] = c
-    pixels[x - 0, y + 4] = c
-
-    pixels[x + 0, y - 3] = c2
-    pixels[x + 1, y - 3] = c2
-    pixels[x - 1, y - 2] = c2
-    pixels[x - 0, y - 2] = c2
-    pixels[x - 1, y - 1] = c2
-    pixels[x - 0, y - 1] = c2
-    pixels[x + 1, y - 1] = c2
-    pixels[x - 0, y - 0] = c2
-    pixels[x + 1, y - 0] = c2
-    pixels[x - 1, y + 1] = c2
-    pixels[x - 0, y + 1] = c2
-
-
-def _draw_steppe(pixels, x, y):
-    b = (x ** int(y / 5) + x * 23 + y * 37 + (x * y) * 13) % 75
-    r = 96 - b
-    g = 192 - b
-    b = 96 - b
-    pixels[x, y] = (r, g, b, 255)
-
+                _mask.putpixel((x,y),(0,0,0,255))
+    return _mask  
 
 def _draw_cool_desert(pixels, x, y, w, h):
     c = (72, 72, 53, 255)
@@ -331,159 +163,6 @@ def _draw_cool_desert(pixels, x, y, w, h):
     pixels[x - 8, y + 2] = c
     pixels[x - 7, y + 2] = c
 
-
-def _draw_warm_temperate_forest(pixels, x, y, w, h):
-    c = (0, 96, 0, 255)
-    c2 = (0, 192, 0, 255)
-    pixels[x - 1, y - 4] = c
-    pixels[x - 0, y - 4] = c
-    pixels[x + 1, y - 4] = c
-    pixels[x - 2, y - 3] = c
-    pixels[x - 1, y - 3] = c
-    pixels[x + 2, y - 3] = c
-    pixels[x - 2, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x + 2, y - 2] = c
-    pixels[x - 2, y - 1] = c
-    pixels[x + 2, y - 1] = c
-    pixels[x - 2, y - 0] = c
-    pixels[x - 1, y - 0] = c
-    pixels[x + 2, y - 0] = c
-    pixels[x - 2, y + 1] = c
-    pixels[x + 1, y + 1] = c
-    pixels[x + 2, y + 1] = c
-    pixels[x - 1, y + 2] = c
-    pixels[x - 0, y + 2] = c
-    pixels[x + 1, y + 2] = c
-    pixels[x - 0, y + 3] = c
-    pixels[x - 0, y + 4] = c
-
-    pixels[x + 0, y - 3] = c2
-    pixels[x + 1, y - 3] = c2
-    pixels[x - 1, y - 2] = c2
-    pixels[x - 0, y - 2] = c2
-    pixels[x - 1, y - 1] = c2
-    pixels[x - 0, y - 1] = c2
-    pixels[x + 1, y - 1] = c2
-    pixels[x - 0, y - 0] = c2
-    pixels[x + 1, y - 0] = c2
-    pixels[x - 1, y + 1] = c2
-    pixels[x - 0, y + 1] = c2
-
-
-def _draw_chaparral(pixels, x, y):
-    b = (x ** int(y / 5) + x * 23 + y * 37 + (x * y) * 13) % 75
-    r = 180 - b
-    g = 171 - b
-    b = 113 - b
-    pixels[x, y] = (r, g, b, 255)
-
-
-def _draw_hot_desert(pixels, x, y, w, h):
-    c = (72, 72, 53, 255)
-    # c2 = (219, 220, 200, 255)  # TODO: not used?
-
-    pixels[x - 1, y - 2] = c
-    pixels[x - 0, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x + 2, y - 2] = c
-    pixels[x - 2, y - 1] = c
-    pixels[x - 1, y - 1] = c
-    pixels[x - 0, y - 1] = c
-    pixels[x + 4, y - 1] = c
-    pixels[x - 4, y - 0] = c
-    pixels[x - 3, y - 0] = c
-    pixels[x - 2, y - 0] = c
-    pixels[x - 1, y - 0] = c
-    pixels[x + 1, y - 0] = c
-    pixels[x + 2, y - 0] = c
-    pixels[x + 6, y - 0] = c
-    pixels[x - 5, y + 1] = c
-    pixels[x - 0, y + 1] = c
-    pixels[x + 7, y + 1] = c
-    pixels[x + 8, y + 1] = c
-    pixels[x - 8, y + 2] = c
-    pixels[x - 7, y + 2] = c
-
-
-def _draw_tropical_dry_forest(pixels, x, y, w, h):
-    c = (51, 36, 3, 255)
-    c2 = (139, 204, 58, 255)
-    pixels[x - 1, y - 4] = c
-    pixels[x - 0, y - 4] = c
-    pixels[x + 1, y - 4] = c
-    pixels[x - 2, y - 3] = c
-    pixels[x - 1, y - 3] = c
-    pixels[x + 2, y - 3] = c
-    pixels[x - 2, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x + 2, y - 2] = c
-    pixels[x - 2, y - 1] = c
-    pixels[x + 2, y - 1] = c
-    pixels[x - 2, y - 0] = c
-    pixels[x - 1, y - 0] = c
-    pixels[x + 2, y - 0] = c
-    pixels[x - 2, y + 1] = c
-    pixels[x + 1, y + 1] = c
-    pixels[x + 2, y + 1] = c
-    pixels[x - 1, y + 2] = c
-    pixels[x - 0, y + 2] = c
-    pixels[x + 1, y + 2] = c
-    pixels[x - 0, y + 3] = c
-    pixels[x - 0, y + 4] = c
-
-    pixels[x + 0, y - 3] = c2
-    pixels[x + 1, y - 3] = c2
-    pixels[x - 1, y - 2] = c2
-    pixels[x - 0, y - 2] = c2
-    pixels[x - 1, y - 1] = c2
-    pixels[x - 0, y - 1] = c2
-    pixels[x + 1, y - 1] = c2
-    pixels[x - 0, y - 0] = c2
-    pixels[x + 1, y - 0] = c2
-    pixels[x - 1, y + 1] = c2
-    pixels[x - 0, y + 1] = c2
-
-
-def _draw_jungle(pixels, x, y, w, h):
-    c = (0, 128, 0, 255)
-    c2 = (0, 255, 0, 255)
-    pixels[x - 1, y - 4] = c
-    pixels[x - 0, y - 4] = c
-    pixels[x + 1, y - 4] = c
-    pixels[x - 2, y - 3] = c
-    pixels[x - 1, y - 3] = c
-    pixels[x + 2, y - 3] = c
-    pixels[x - 2, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x + 2, y - 2] = c
-    pixels[x - 2, y - 1] = c
-    pixels[x + 2, y - 1] = c
-    pixels[x - 2, y - 0] = c
-    pixels[x - 1, y - 0] = c
-    pixels[x + 2, y - 0] = c
-    pixels[x - 2, y + 1] = c
-    pixels[x + 1, y + 1] = c
-    pixels[x + 2, y + 1] = c
-    pixels[x - 1, y + 2] = c
-    pixels[x - 0, y + 2] = c
-    pixels[x + 1, y + 2] = c
-    pixels[x - 0, y + 3] = c
-    pixels[x - 0, y + 4] = c
-
-    pixels[x + 0, y - 3] = c2
-    pixels[x + 1, y - 3] = c2
-    pixels[x - 1, y - 2] = c2
-    pixels[x - 0, y - 2] = c2
-    pixels[x - 1, y - 1] = c2
-    pixels[x - 0, y - 1] = c2
-    pixels[x + 1, y - 1] = c2
-    pixels[x - 0, y - 0] = c2
-    pixels[x + 1, y - 0] = c2
-    pixels[x - 1, y + 1] = c2
-    pixels[x - 0, y + 1] = c2
-
 def _stamp(image, stamp, x, y, w, h):
     stamp = stamp.resize([int(w), int(h)],Image.ANTIALIAS)
     left = x - int(w/2)
@@ -509,14 +188,6 @@ def _texture(image, texture, mask):
             top = y * texture.size[1]
             tx.paste(texture, (left, top))
     image._fill(tx, mask)
-    
-def _draw_savanna(pixels, x, y):
-    b = (x ** int(y / 5) + x * 23 + y * 37 + (x * y) * 13) % 75
-    r = 255 - b
-    g = 246 - b
-    b = 188 - b
-    pixels[x, y] = (r, g, b, 255)
-
 
 # TODO: complete and enable this one
 def _dynamic_draw_a_mountain(pixels, rng, x, y, w=3, h=3):
@@ -603,7 +274,7 @@ def draw_ancientmap(world, target, resize_factor=1,
 
     if verbose:
         start_time = time.time()
-    print("Loading mountain bitmaps")
+    print("Loading bitmaps")
 
     Mountains = [Image.open("worldengine/data/mountain1.png"),
                  Image.open("worldengine/data/mountain2.png"),
@@ -611,13 +282,9 @@ def draw_ancientmap(world, target, resize_factor=1,
                  Image.open("worldengine/data/mountain4.png"),
                  Image.open("worldengine/data/mountain5.png")]
 
-    print("Loading hill bitmaps")
-
     Hills = [Image.open("worldengine/data/hill1.png"),
              Image.open("worldengine/data/hill2.png"),
              Image.open("worldengine/data/hill3.png")]
-
-    print("Loading desert bitmaps")
     
     Deserts = [Image.open("worldengine/data/desert1.png"),
                Image.open("worldengine/data/desert2.png"),
@@ -674,25 +341,16 @@ def draw_ancientmap(world, target, resize_factor=1,
     if draw_mountains:  # TODO: numpy offers masked arrays - maybe they can be leveraged for all this?
         mountains_mask = _find_mountains_mask(world, resize_factor)
     if draw_biome:
-        boreal_forest_mask = _find_boreal_forest_mask(world, resize_factor)
-        temperate_forest_mask = _find_temperate_forest_mask(world, resize_factor)
+        print("Creating masks")
+        boreal_forest_mask = _createmask(world, world.is_boreal_forest, resize_factor)
+        temperate_forest_mask = _createmask(world, world.is_temperate_forest, resize_factor)
         warm_temperate_forest_mask = \
-            _find_warm_temperate_forest_mask(world, resize_factor)
-        tropical_dry_forest_mask = _find_tropical_dry_forest_mask(world,
-                                                                   resize_factor)
-        # jungle is actually Tropical Rain Forest and Tropical Seasonal Forest
-        jungle_mask = _mask(world, world.is_jungle,
-                            resize_factor)
-        #tundra_mask = _mask(world, world.is_tundra, resize_factor)
-        # savanna is actually Tropical semi-arid
-        #savanna_mask = _mask(world, world.is_savanna, resize_factor)
-        #cold_parklands_mask = _mask(world, world.is_cold_parklands, resize_factor)
-        #steppe_mask = _mask(world, world.is_steppe, resize_factor)
-        cool_desert_mask = _mask(world, world.is_cool_desert, resize_factor)
-        #chaparral_mask = _mask(world, world.is_chaparral, resize_factor)
-        hot_desert_mask = _mask(world, world.is_hot_desert, resize_factor)
-        rock_desert_mask = _mask(world, world.is_hot_desert, resize_factor)  # TODO: add is_desert_mask
-
+            _createmask(world, world.is_warm_temperate_forest, resize_factor)
+        tropical_dry_forest_mask = _createmask(world, world.is_tropical_dry_forest, resize_factor)
+        jungle_mask = _createmask(world, world.is_jungle, resize_factor)
+        cool_desert_mask = _createmask(world, world.is_cool_desert, resize_factor)
+        hot_desert_mask = _createmask(world, world.is_hot_desert, resize_factor)
+        rock_desert_mask = _createmask(world, world.is_hot_desert, resize_factor)  # TODO: add is_desert_mask
         ice_mask = _createmask(world, world.is_iceland, resize_factor)
         tundra_mask = _createmask(world, world.is_tundra, resize_factor)
         parklands_mask = _createmask(world, world.is_cold_parklands, resize_factor)
@@ -705,60 +363,92 @@ def draw_ancientmap(world, target, resize_factor=1,
         mountains_mask[y, x] = 0
 
     def unset_boreal_forest_mask(pos):
-        x, y = pos
-        boreal_forest_mask[y, x] = 0
+        boreal_forest_mask.putpixel(pos,(0,0,0,0))
 
     def unset_temperate_forest_mask(pos):
-        x, y = pos
-        temperate_forest_mask[y, x] = 0
+        temperate_forest_mask.putpixel(pos,(0,0,0,0))
 
     def unset_warm_temperate_forest_mask(pos):
-        x, y = pos
-        warm_temperate_forest_mask[y, x] = 0
+        warm_temperate_forest_mask.putpixel(pos,(0,0,0,0))
 
     def unset_tropical_dry_forest_mask(pos):
-        x, y = pos
-        tropical_dry_forest_mask[y, x] = 0
+        tropical_dry_forest_mask.putpixel(pos,(0,0,0,0))
 
     def unset_jungle_mask(pos):
-        x, y = pos
-        jungle_mask[y, x] = 0
+        jungle_mask.putpixel(pos,(0,0,0,0))
 
     def unset_tundra_mask(pos):
-        x, y = pos
-        tundra_mask[y, x] = 0
+        tundra_mask.putpixel(pos,(0,0,0,0))
 
     def unset_savanna_mask(pos):
-        x, y = pos
-        savanna_mask[y, x] = 0
+        savanna_mask.putpixel(pos,(0,0,0,0))
 
     def unset_hot_desert_mask(pos):
-        x, y = pos
-        hot_desert_mask[y, x] = 0
+        hot_desert_mask.putpixel(pos,(0,0,0,0))
 
     def unset_rock_desert_mask(pos):
-        x, y = pos
-        rock_desert_mask[y, x] = 0
+        rock_desert_mask.putpixel(pos,(0,0,0,0))
 
     def unset_cold_parklands_mask(pos):
-        x, y = pos
-        cold_parklands_mask[y, x] = 0
+        parklands_mask.putpixel(pos,(0,0,0,0))
 
     def unset_steppe_mask(pos):
-        x, y = pos
-        steppe_mask[y, x] = 0
+        steppe_mask.putpixel(pos,(0,0,0,0))
 
     def unset_cool_desert_mask(pos):
-        x, y = pos
-        cool_desert_mask[y, x] = 0
+        cool_desert_mask.putpixel(pos,(0,0,0,0))
 
     def unset_chaparral_mask(pos):
-        x, y = pos
-        chaparral_mask[y, x] = 0
+        chaparral_mask.putpixel(pos,(0,0,0,0))
 
     def on_border(pos):
         x, y = pos
         return borders[y, x]
+
+    if draw_rivers:
+        print("Cutting rivers from masks")
+        for y in range(world.height):
+            for x in range(world.width):
+                if world.is_land((x, y)) and (world.river_map[x, y] > 0.0):
+                    for dx in range(x*resize_factor-9,(x+1)*resize_factor+9):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+6):
+                            unset_hot_desert_mask((dx, dy))
+                    for dx in range(x*resize_factor-6,(x+1)*resize_factor+6):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+15):
+                            unset_boreal_forest_mask((dx, dy))
+                            unset_temperate_forest_mask((dx, dy))
+                            unset_warm_temperate_forest_mask((dx, dy))
+                            unset_tropical_dry_forest_mask((dx, dy))
+                            unset_jungle_mask((dx, dy))
+                    for dx in range(x*resize_factor,(x+1)*resize_factor):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor):
+                            unset_tundra_mask((dx, dy))
+                            unset_savanna_mask((dx, dy))
+                            unset_rock_desert_mask((dx, dy))
+                            unset_cold_parklands_mask((dx, dy))
+                            unset_steppe_mask((dx, dy))
+                            unset_cool_desert_mask((dx, dy))
+                            unset_chaparral_mask((dx, dy))
+                if world.is_land((x, y)) and (world.lake_map[x, y] != 0):
+                    for dx in range(x*resize_factor-9,(x+1)*resize_factor+9):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+6):
+                            unset_hot_desert_mask((dx, dy))
+                    for dx in range(x*resize_factor-6,(x+1)*resize_factor+6):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+15):
+                            unset_boreal_forest_mask((dx, dy))
+                            unset_temperate_forest_mask((dx, dy))
+                            unset_warm_temperate_forest_mask((dx, dy))
+                            unset_tropical_dry_forest_mask((dx, dy))
+                            unset_jungle_mask((dx, dy))
+                    for dx in range(x*resize_factor,(x+1)*resize_factor):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor):
+                            unset_tundra_mask((dx, dy))
+                            unset_savanna_mask((dx, dy))
+                            unset_rock_desert_mask((dx, dy))
+                            unset_cold_parklands_mask((dx, dy))
+                            unset_steppe_mask((dx, dy))
+                            unset_cool_desert_mask((dx, dy))
+                            unset_chaparral_mask((dx, dy))
 
     if verbose:
         elapsed_time = time.time() - start_time
@@ -831,6 +521,7 @@ def draw_ancientmap(world, target, resize_factor=1,
 
     # Draw texture biomes
     if draw_biome:
+        print("Drawing textures")
         _texture(target, Ice, ice_mask)
         _texture(target, Tundra, tundra_mask)
         _texture(target, Parklands, parklands_mask)
@@ -839,9 +530,11 @@ def draw_ancientmap(world, target, resize_factor=1,
         _texture(target, Savanna, savanna_mask)
 
         # Draw cool desert
+        print("Drawing cool deserts")
         for y in range(resize_factor * world.height):
             for x in range(resize_factor * world.width):
-                if cool_desert_mask[y, x] > 0:
+                pos = (x,y)
+                if cool_desert_mask.getpixel(pos)[3] == 255:
                     w = 8
                     h = 2
                     r = 9
@@ -854,9 +547,11 @@ def draw_ancientmap(world, target, resize_factor=1,
                                                      action=unset_cool_desert_mask)
 
         # Draw icons
+        print("Drawing icons")
         for y in range(resize_factor * world.height):
             for x in range(resize_factor * world.width):
-                if hot_desert_mask[y, x] > 0:
+                pos = (x,y)
+                if hot_desert_mask.getpixel(pos)[3] == 255:
                     w = 6
                     h = 2
                     r = 6
@@ -869,7 +564,7 @@ def draw_ancientmap(world, target, resize_factor=1,
                                                      radius=r,
                                                      action=unset_hot_desert_mask)
                         
-                if boreal_forest_mask[y, x] > 0:
+                if boreal_forest_mask.getpixel(pos)[3] == 255:
                     w = 4
                     h = 5
                     r = 6
@@ -883,7 +578,7 @@ def draw_ancientmap(world, target, resize_factor=1,
                             radius=r,
                             action=unset_boreal_forest_mask)
 
-                if temperate_forest_mask[y, x] > 0:
+                if temperate_forest_mask.getpixel(pos)[3] == 255:
                     w = 4
                     h = 5
                     r = 6
@@ -901,7 +596,7 @@ def draw_ancientmap(world, target, resize_factor=1,
                             radius=r,
                             action=unset_temperate_forest_mask)
 
-                if warm_temperate_forest_mask[y, x] > 0:
+                if warm_temperate_forest_mask.getpixel(pos)[3] == 255:
                     w = 4
                     h = 5
                     r = 6
@@ -915,7 +610,7 @@ def draw_ancientmap(world, target, resize_factor=1,
                             radius=r,
                             action=unset_warm_temperate_forest_mask)
 
-                if tropical_dry_forest_mask[y, x] > 0:
+                if tropical_dry_forest_mask.getpixel(pos)[3] == 255:
                     w = 4
                     h = 5
                     r = 6
@@ -928,7 +623,8 @@ def draw_ancientmap(world, target, resize_factor=1,
                             resize_factor, (x, y),
                             radius=r,
                             action=unset_tropical_dry_forest_mask)
-                if jungle_mask[y, x] > 0:
+                
+                if jungle_mask.getpixel(pos)[3] == 255:
                     w = 4
                     h = 5
                     r = 6
@@ -942,10 +638,12 @@ def draw_ancientmap(world, target, resize_factor=1,
                                                      action=unset_jungle_mask)
 
     if draw_rivers:
+        print("Drawing rivers")
         draw_rivers_on_image(world, target, resize_factor)
 
     # Draw mountains
     if draw_mountains:
+        print("Drawing mountains")
         if verbose:
             start_time = time.time()
         for y in range(resize_factor * world.height):
@@ -962,8 +660,8 @@ def draw_ancientmap(world, target, resize_factor=1,
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r, action=unset_mask)
                 elif mountains_mask[y, x] > 0:
-                    h = int(mountains_mask[y, x] * 1 / 2)
-                    w = int(h * 3)
+                    h = int(mountains_mask[y, x] * 2 / 3)
+                    w = int(h * (4 / ( 1 + (h/3.4)) ))
                     r = max(int(w / 3 * 2), h)
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
