@@ -7,7 +7,7 @@ import worldengine.generation as geo
 from worldengine.common import array_to_matrix, set_verbose, print_verbose
 from worldengine.draw import draw_ancientmap_on_file, draw_biome_on_file, draw_ocean_on_file, \
     draw_precipitation_on_file, draw_grayscale_heightmap_on_file, draw_simple_elevation_on_file, \
-    draw_temperature_levels_on_file, draw_riversmap_on_file, draw_scatter_plot_on_file
+    draw_temperature_levels_on_file, draw_riversmap_on_file, draw_scatter_plot_on_file, draw_satellite_on_file
 from worldengine.plates import world_gen, generate_plates_simulation
 from worldengine.imex import export
 from worldengine.step import Step
@@ -22,7 +22,7 @@ STEPS = 'plates|precipitations|full'
 
 
 def generate_world(world_name, width, height, seed, num_plates, output_dir,
-                   step, ocean_level, temps, humids, world_format='pickle',
+                   step, ocean_level, temps, humids, world_format='protobuf',
                    gamma_curve=1.25, curve_offset=.2, fade_borders=True,
                    verbose=True, black_and_white=False):
     w = world_gen(world_name, width, height, seed, temps, humids, num_plates, ocean_level,
@@ -83,6 +83,9 @@ def draw_scatter_plot(world, filename):
     draw_scatter_plot_on_file(world, filename)
     print("+ scatter plot generated in '%s'" % filename)
 
+def draw_satellite_map(world, filename):
+    draw_satellite_on_file(world, filename)
+    print("+ satellite map generated in '%s'" % filename)
 
 def generate_plates(seed, world_name, output_dir, width, height,
                     num_plates=10):
@@ -245,12 +248,6 @@ def main():
              "a name is not provided, then seed_N.world, " +
              "where N=SEED",
         metavar="STR")
-    # TODO: add description of protocol buffer
-    parser.add_argument('-b', '--protocol-buffer', dest='protobuf',
-                        action="store_true",
-                        help="Save world file using protocol buffer format. " +
-                             "Default = store using pickle format",
-                        default=False)
     parser.add_argument('-s', '--seed', dest='seed', type=int,
                         help="Use seed=N to initialize the pseudo-random " +
                              "generation. If not provided, one will be " +
@@ -325,6 +322,9 @@ def main():
                                default=True)
     g_generate.add_argument('--scatter', dest='scatter_plot',
                             action="store_true", help="generate scatter plot")
+
+    g_generate.add_argument('--sat', dest='satelite_map',
+                            action="store_true", help="generate satellite map")
 
     # -----------------------------------------------------
     g_ancient_map = parser.add_argument_group(
@@ -408,7 +408,7 @@ def main():
         if not os.path.exists(args.FILE):
             usage("The specified world file does not exist")
 
-    maxseed = 65535  # there is a hard limit somewhere so seeds outside the uint16 range are considered unsafe
+    maxseed = numpy.iinfo(numpy.uint16).max  # there is a hard limit somewhere so seeds outside the uint16 range are considered unsafe
     if args.seed is not None:
         seed = int(args.seed)
         assert 0 <= seed <= maxseed, "Seed has to be in the range between 0 and %s, borders included." % maxseed
@@ -423,9 +423,7 @@ def main():
 
     step = check_step(args.step)
 
-    world_format = 'pickle'
-    if args.protobuf:
-        world_format = 'protobuf'
+    world_format = 'protobuf'
 
     generation_operation = (operation == 'world') or (operation == 'plates')
 
@@ -484,6 +482,7 @@ def main():
         print(' greyscale heightmap  : %s' % args.grayscale_heightmap)
         print(' rivers map           : %s' % args.rivers_map)
         print(' scatter plot         : %s' % args.scatter_plot)
+        print(' satellite map        : %s' % args.satelite_map)
         print(' fade borders         : %s' % args.fade_borders)
         if args.temps:
             print(' temperature ranges   : %s' % args.temps)
@@ -542,6 +541,9 @@ def main():
         if args.scatter_plot:
             draw_scatter_plot(world,
             '%s/%s_scatter.png' % (args.output_dir, world_name))    
+        if args.satelite_map:
+            draw_satellite_map(world,
+            '%s/%s_satellite.png' % (args.output_dir, world_name))    
 
     elif operation == 'plates':
         print('')  # empty line
