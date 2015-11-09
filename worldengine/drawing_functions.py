@@ -7,6 +7,7 @@ Jython
 import numpy
 import sys
 import time
+from PIL import ImageFilter
 from PIL import Image
 from worldengine.common import get_verbose
 
@@ -124,7 +125,9 @@ def _mask(world, predicate, factor):
                     _mask[y, x] = v
     return _mask
 
-def _createmask(world, predicate, factor):
+def _createmask(world, predicate, factor, odds=1):
+    print(odds)
+    rng = numpy.random.RandomState(world.seed)
     width = world.width * factor
     height = world.height * factor
     _mask = Image.new("RGBA", (width,height))
@@ -132,8 +135,12 @@ def _createmask(world, predicate, factor):
         for x in range(width):
             xf = int(x / factor)
             yf = int(y / factor)
-            if predicate((xf, yf)):
-                _mask.putpixel((x,y),(0,0,0,255))
+            if predicate((xf, yf)) and rng.random_sample() < odds:
+                v = len(
+                    world.tiles_around((xf, yf), radius=1,
+                                       predicate=predicate))
+                if v > 5:
+                    _mask.putpixel((x,y),(0,0,0,255))
     return _mask  
 
 def _draw_cool_desert(pixels, x, y, w, h):
@@ -276,59 +283,113 @@ def draw_ancientmap(world, target, resize_factor=1,
         start_time = time.time()
     print("Loading bitmaps")
 
-    Mountains = [Image.open("worldengine/data/mountain1.png"),
-                 Image.open("worldengine/data/mountain2.png"),
-                 Image.open("worldengine/data/mountain3.png"),
-                 Image.open("worldengine/data/mountain4.png"),
-                 Image.open("worldengine/data/mountain5.png")]
+    Icons = Image.open("worldengine/data/Icons.png")
 
-    Hills = [Image.open("worldengine/data/hill1.png"),
-             Image.open("worldengine/data/hill2.png"),
-             Image.open("worldengine/data/hill3.png")]
+    Mountains = [Icons.crop((4,259,53,298)),
+                 Icons.crop((56,259,105,298)),
+                 Icons.crop((108,259,157,298)),
+                 Icons.crop((4,301,53,340)),
+                 Icons.crop((56,301,105,340))]
+
+    Hills = [Icons.crop((4,343,103,367)),
+             Icons.crop((4,370,103,394)),
+             Icons.crop((4,397,103,421))]
     
-    Deserts = [Image.open("worldengine/data/desert1.png"),
-               Image.open("worldengine/data/desert2.png"),
-               Image.open("worldengine/data/desert3.png")]
+    Deserts = [Icons.crop((4,72,21,77)),
+               Icons.crop((24,72,41,77)),
+               Icons.crop((44,72,61,77))]
 
-    Decids = [Image.open("worldengine/data/decid1.png"),
-              Image.open("worldengine/data/decid2.png"),
-              Image.open("worldengine/data/decid3.png"),
-              Image.open("worldengine/data/decid4.png"),
-              Image.open("worldengine/data/decid5.png"),
-              Image.open("worldengine/data/decid6.png")]
+    Decids = [Icons.crop((4,4,15,18)),
+              Icons.crop((18,4,29,18)),
+              Icons.crop((32,4,43,18)),
+              Icons.crop((46,4,57,18)),
+              Icons.crop((60,4,71,18)),
+              Icons.crop((74,4,85,18))]
 
-    Pines = [Image.open("worldengine/data/pine1.png"),
-             Image.open("worldengine/data/pine2.png"),
-             Image.open("worldengine/data/pine3.png"),
-             Image.open("worldengine/data/pine4.png"),
-             Image.open("worldengine/data/pine5.png"),
-             Image.open("worldengine/data/pine6.png")]
+    Pines = [Icons.crop((4,38,15,52)),
+             Icons.crop((18,38,29,52)),
+             Icons.crop((32,38,43,52)),
+             Icons.crop((46,38,57,52)),
+             Icons.crop((60,38,71,52)),
+             Icons.crop((74,38,85,52))]
 
-    Jungles = [Image.open("worldengine/data/palm1.png"),
-               Image.open("worldengine/data/palm2.png"),
-               Image.open("worldengine/data/palm3.png"),
-               Image.open("worldengine/data/palm4.png"),
-               Image.open("worldengine/data/palm5.png"),
-               Image.open("worldengine/data/palm6.png")]
+    Jungles = [Icons.crop((4,21,15,35)),
+               Icons.crop((18,21,29,35)),
+               Icons.crop((32,21,43,35)),
+               Icons.crop((46,21,57,35)),
+               Icons.crop((60,21,71,35)),
+               Icons.crop((74,21,85,35))]
 
-    DryTropicals = [Image.open("worldengine/data/DT1.png"),
-                    Image.open("worldengine/data/DT2.png"),
-                    Image.open("worldengine/data/DT3.png"),
-                    Image.open("worldengine/data/DT4.png"),
-                    Image.open("worldengine/data/DT5.png"),
-                    Image.open("worldengine/data/DT6.png")]
+    DryTropicals = [Icons.crop((4,55,15,69)),
+                    Icons.crop((18,55,29,69))]
 
-    Ice = Image.open("worldengine/data/ice.png")
+    Ice = Icons.crop((4,80,43,119))
 
-    Tundra = Image.open("worldengine/data/tundra.png")
+    Tundra = Icons.crop((46,122,85,161))
 
-    Parklands = Image.open("worldengine/data/parklands.png")
+    Parklands = Icons.crop((46,80,85,119))
 
-    Steppe = Image.open("worldengine/data/steppe.png")
+    Steppe = Icons.crop((4,122,43,161))
 
-    Chaparral = Image.open("worldengine/data/chaparral.png")
+    Chaparral = Icons.crop((4,164,83,196))
 
-    Savanna = Image.open("worldengine/data/savanna.png")
+    Savanna = Icons.crop((88,80,127,119))
+
+    CoolDesert = Icons.crop((4,199,83,256))
+
+    Water = Icons.crop((130, 4, 329, 203))
+
+    #Mountains = [Image.open("worldengine/data/mountain1.png"),
+    #             Image.open("worldengine/data/mountain2.png"),
+    #             Image.open("worldengine/data/mountain3.png"),
+    #             Image.open("worldengine/data/mountain4.png"),
+    #             Image.open("worldengine/data/mountain5.png")]
+
+    #Hills = [Image.open("worldengine/data/hill1.png"),
+    #         Image.open("worldengine/data/hill2.png"),
+    #         Image.open("worldengine/data/hill3.png")]
+    
+    #Deserts = [Image.open("worldengine/data/desert1.png"),
+    #           Image.open("worldengine/data/desert2.png"),
+    #           Image.open("worldengine/data/desert3.png")]
+
+    #Decids = [Image.open("worldengine/data/decid1.png"),
+    #          Image.open("worldengine/data/decid2.png"),
+    #          Image.open("worldengine/data/decid3.png"),
+    #          Image.open("worldengine/data/decid4.png"),
+    #          Image.open("worldengine/data/decid5.png"),
+    #          Image.open("worldengine/data/decid6.png")]
+
+    #Pines = [Image.open("worldengine/data/pine1.png"),
+    #         Image.open("worldengine/data/pine2.png"),
+    #         Image.open("worldengine/data/pine3.png"),
+    #         Image.open("worldengine/data/pine4.png"),
+    #         Image.open("worldengine/data/pine5.png"),
+    #         Image.open("worldengine/data/pine6.png")]
+
+    #Jungles = [Image.open("worldengine/data/palm1.png"),
+    #           Image.open("worldengine/data/palm2.png"),
+    #           Image.open("worldengine/data/palm3.png"),
+    #           Image.open("worldengine/data/palm4.png"),
+    #           Image.open("worldengine/data/palm5.png"),
+    #           Image.open("worldengine/data/palm6.png")]
+
+    #DryTropicals = [Image.open("worldengine/data/DT1.png"),
+    #                Image.open("worldengine/data/DT2.png")]
+
+    #Ice = Image.open("worldengine/data/ice.png")
+
+    #Tundra = Image.open("worldengine/data/tundra.png")
+
+    #Parklands = Image.open("worldengine/data/parklands.png")
+
+    #Steppe = Image.open("worldengine/data/steppe.png")
+
+    #Chaparral = Image.open("worldengine/data/chaparral.png")
+
+    #Savanna = Image.open("worldengine/data/savanna.png")
+
+    #CoolDesert = Image.open("worldengine/data/CoolDesert.png")
 
     land_color = (
         181, 166, 127, 255)  # TODO: Put this in the argument list too??
@@ -342,15 +403,16 @@ def draw_ancientmap(world, target, resize_factor=1,
         mountains_mask = _find_mountains_mask(world, resize_factor)
     if draw_biome:
         print("Creating masks")
-        boreal_forest_mask = _createmask(world, world.is_boreal_forest, resize_factor)
-        temperate_forest_mask = _createmask(world, world.is_temperate_forest, resize_factor)
+        land_mask = boreal_forest_mask = _createmask(world, world.is_land, resize_factor, 1)
+        water_mask = land_mask.filter(ImageFilter.GaussianBlur(16))
+        boreal_forest_mask = _createmask(world, world.is_boreal_forest, resize_factor, .25)
+        temperate_forest_mask = _createmask(world, world.is_temperate_forest, resize_factor, .25)
         warm_temperate_forest_mask = \
-            _createmask(world, world.is_warm_temperate_forest, resize_factor)
-        tropical_dry_forest_mask = _createmask(world, world.is_tropical_dry_forest, resize_factor)
-        jungle_mask = _createmask(world, world.is_jungle, resize_factor)
-        cool_desert_mask = _createmask(world, world.is_cool_desert, resize_factor)
-        hot_desert_mask = _createmask(world, world.is_hot_desert, resize_factor)
-        rock_desert_mask = _createmask(world, world.is_hot_desert, resize_factor)  # TODO: add is_desert_mask
+            _createmask(world, world.is_warm_temperate_forest, resize_factor, .25)
+        tropical_dry_forest_mask = _createmask(world, world.is_tropical_dry_forest, resize_factor, .25)
+        jungle_mask = _createmask(world, world.is_jungle, resize_factor, .25)
+        cool_desert_mask = _createmask(world, world.is_cool_desert, resize_factor, 1)
+        hot_desert_mask = _createmask(world, world.is_hot_desert, resize_factor, .41667)
         ice_mask = _createmask(world, world.is_iceland, resize_factor)
         tundra_mask = _createmask(world, world.is_tundra, resize_factor)
         parklands_mask = _createmask(world, world.is_cold_parklands, resize_factor)
@@ -386,9 +448,6 @@ def draw_ancientmap(world, target, resize_factor=1,
     def unset_hot_desert_mask(pos):
         hot_desert_mask.putpixel(pos,(0,0,0,0))
 
-    def unset_rock_desert_mask(pos):
-        rock_desert_mask.putpixel(pos,(0,0,0,0))
-
     def unset_cold_parklands_mask(pos):
         parklands_mask.putpixel(pos,(0,0,0,0))
 
@@ -410,11 +469,11 @@ def draw_ancientmap(world, target, resize_factor=1,
         for y in range(world.height):
             for x in range(world.width):
                 if world.is_land((x, y)) and (world.river_map[x, y] > 0.0):
-                    for dx in range(x*resize_factor-9,(x+1)*resize_factor+9):
-                        for dy in range(y*resize_factor,(y+1)*resize_factor+6):
+                    for dx in range(x*resize_factor-8,(x+1)*resize_factor+8):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+5):
                             unset_hot_desert_mask((dx, dy))
-                    for dx in range(x*resize_factor-6,(x+1)*resize_factor+6):
-                        for dy in range(y*resize_factor,(y+1)*resize_factor+15):
+                    for dx in range(x*resize_factor-5,(x+1)*resize_factor+5):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+14):
                             unset_boreal_forest_mask((dx, dy))
                             unset_temperate_forest_mask((dx, dy))
                             unset_warm_temperate_forest_mask((dx, dy))
@@ -424,17 +483,16 @@ def draw_ancientmap(world, target, resize_factor=1,
                         for dy in range(y*resize_factor,(y+1)*resize_factor):
                             unset_tundra_mask((dx, dy))
                             unset_savanna_mask((dx, dy))
-                            unset_rock_desert_mask((dx, dy))
                             unset_cold_parklands_mask((dx, dy))
                             unset_steppe_mask((dx, dy))
-                            unset_cool_desert_mask((dx, dy))
                             unset_chaparral_mask((dx, dy))
+                            unset_cool_desert_mask((dx, dy))
                 if world.is_land((x, y)) and (world.lake_map[x, y] != 0):
-                    for dx in range(x*resize_factor-9,(x+1)*resize_factor+9):
-                        for dy in range(y*resize_factor,(y+1)*resize_factor+6):
+                    for dx in range(x*resize_factor-8,(x+1)*resize_factor+8):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+5):
                             unset_hot_desert_mask((dx, dy))
-                    for dx in range(x*resize_factor-6,(x+1)*resize_factor+6):
-                        for dy in range(y*resize_factor,(y+1)*resize_factor+15):
+                    for dx in range(x*resize_factor-5,(x+1)*resize_factor+5):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+14):
                             unset_boreal_forest_mask((dx, dy))
                             unset_temperate_forest_mask((dx, dy))
                             unset_warm_temperate_forest_mask((dx, dy))
@@ -444,11 +502,10 @@ def draw_ancientmap(world, target, resize_factor=1,
                         for dy in range(y*resize_factor,(y+1)*resize_factor):
                             unset_tundra_mask((dx, dy))
                             unset_savanna_mask((dx, dy))
-                            unset_rock_desert_mask((dx, dy))
                             unset_cold_parklands_mask((dx, dy))
                             unset_steppe_mask((dx, dy))
-                            unset_cool_desert_mask((dx, dy))
                             unset_chaparral_mask((dx, dy))
+                            unset_cool_desert_mask((dx, dy))
 
     if verbose:
         elapsed_time = time.time() - start_time
@@ -457,6 +514,12 @@ def draw_ancientmap(world, target, resize_factor=1,
             str(elapsed_time) + " seconds.")
         sys.stdout.flush()
 
+    for y in range(resize_factor * world.height):
+        for x in range(resize_factor * world.width):
+            target.set_pixel(x, y, sea_color)
+
+    _texture(target, Water, water_mask)
+    
     if verbose:
         start_time = time.time()
     border_color = (0, 0, 0, 255)
@@ -469,10 +532,10 @@ def draw_ancientmap(world, target, resize_factor=1,
                 target.set_pixel(x, y, border_color)
             elif draw_outer_land_border and outer_borders[y, x]:
                 target.set_pixel(x, y, outer_border_color)
-            elif world.ocean[yf, xf]:
-                target.set_pixel(x, y, sea_color)
-            else:
+            elif not world.ocean[yf, xf]:
                 target.set_pixel(x, y, land_color)
+            #else:
+            #    target.set_pixel(x, y, land_color)
     if verbose:
         elapsed_time = time.time() - start_time
         print(
@@ -528,29 +591,14 @@ def draw_ancientmap(world, target, resize_factor=1,
         _texture(target, Steppe, steppe_mask)
         _texture(target, Chaparral, chaparral_mask)
         _texture(target, Savanna, savanna_mask)
-
-        # Draw cool desert
-        print("Drawing cool deserts")
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
-                pos = (x,y)
-                if cool_desert_mask.getpixel(pos)[3] == 255:
-                    w = 8
-                    h = 2
-                    r = 9
-                    if len(world.tiles_around_factor(resize_factor, (x, y),
-                                                     radius=r,
-                                                     predicate=on_border)) <= 2:
-                        _draw_cool_desert(target, x, y, w=w, h=h)
-                        world.on_tiles_around_factor(resize_factor, (x, y),
-                                                     radius=r,
-                                                     action=unset_cool_desert_mask)
-
+        _texture(target, CoolDesert, cool_desert_mask)
+             
         # Draw icons
         print("Drawing icons")
         for y in range(resize_factor * world.height):
             for x in range(resize_factor * world.width):
                 pos = (x,y)
+                        
                 if hot_desert_mask.getpixel(pos)[3] == 255:
                     w = 6
                     h = 2
@@ -567,7 +615,7 @@ def draw_ancientmap(world, target, resize_factor=1,
                 if boreal_forest_mask.getpixel(pos)[3] == 255:
                     w = 4
                     h = 5
-                    r = 6
+                    r = 5
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
@@ -581,16 +629,17 @@ def draw_ancientmap(world, target, resize_factor=1,
                 if temperate_forest_mask.getpixel(pos)[3] == 255:
                     w = 4
                     h = 5
-                    r = 6
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
                         if rng.random_sample() <= .5:
                             m = int(len(Pines) * rng.random_sample())
                             _stamp(target, Pines[m], x, y, w=w*3, h=h*3)
+                            r = 5
                         else:
                             m = int(len(Decids) * rng.random_sample())
                             _stamp(target, Decids[m], x, y, w=w*3, h=h*3)
+                            r = 6
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
@@ -627,7 +676,7 @@ def draw_ancientmap(world, target, resize_factor=1,
                 if jungle_mask.getpixel(pos)[3] == 255:
                     w = 4
                     h = 5
-                    r = 6
+                    r = 5
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
@@ -637,19 +686,8 @@ def draw_ancientmap(world, target, resize_factor=1,
                                                      radius=r,
                                                      action=unset_jungle_mask)
 
-    if draw_rivers:
-        print("Drawing rivers")
-        draw_rivers_on_image(world, target, resize_factor)
-
-    # Draw mountains
-    if draw_mountains:
-        print("Drawing mountains")
-        if verbose:
-            start_time = time.time()
-        for y in range(resize_factor * world.height):
-            for x in range(resize_factor * world.width):
                 if mountains_mask[y, x] > 8.5:
-                    h = int(mountains_mask[y, x] * 2 / 3)
+                    h = int(mountains_mask[y, x] * 2 / 3) * 2
                     w = int(h * 3 / 2)
                     r = max(int(w / 3 * 2), h)
                     if len(world.tiles_around_factor(resize_factor, (x, y),
@@ -659,8 +697,8 @@ def draw_ancientmap(world, target, resize_factor=1,
                         _stamp(target, Mountains[m], x, y, w=w*2, h=h*2)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r, action=unset_mask)
-                elif mountains_mask[y, x] > 0:
-                    h = int(mountains_mask[y, x] * 2 / 3)
+                if mountains_mask[y, x] > 0 and mountains_mask[y, x] <= 8.5:
+                    h = int(mountains_mask[y, x] * 2 / 3) * 2
                     w = int(h * (4 / ( 1 + (h/3.4)) ))
                     r = max(int(w / 3 * 2), h)
                     if len(world.tiles_around_factor(resize_factor, (x, y),
@@ -671,8 +709,8 @@ def draw_ancientmap(world, target, resize_factor=1,
                         _stamp(target, Hills[m], x, y, w=w*2, h=h*2)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r, action=unset_mask)
-        if verbose:
-            elapsed_time = time.time() - start_time
-            print(
-                "...drawing_functions.draw_oldmap_on_pixel: draw mountains " +
-                "Elapsed time " + str(elapsed_time) + " seconds.")
+
+    if draw_rivers:
+        print("Drawing rivers")
+        draw_rivers_on_image(world, target, resize_factor)
+        
