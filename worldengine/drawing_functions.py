@@ -143,33 +143,6 @@ def _createmask(world, predicate, factor, odds=1):
                     _mask.putpixel((x,y),(0,0,0,255))
     return _mask  
 
-def _draw_cool_desert(pixels, x, y, w, h):
-    c = (72, 72, 53, 255)
-    # c2 = (219, 220, 200, 255)  # TODO: not used?
-
-    pixels[x - 1, y - 2] = c
-    pixels[x - 0, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x + 1, y - 2] = c
-    pixels[x + 2, y - 2] = c
-    pixels[x - 2, y - 1] = c
-    pixels[x - 1, y - 1] = c
-    pixels[x - 0, y - 1] = c
-    pixels[x + 4, y - 1] = c
-    pixels[x - 4, y - 0] = c
-    pixels[x - 3, y - 0] = c
-    pixels[x - 2, y - 0] = c
-    pixels[x - 1, y - 0] = c
-    pixels[x + 1, y - 0] = c
-    pixels[x + 2, y - 0] = c
-    pixels[x + 6, y - 0] = c
-    pixels[x - 5, y + 1] = c
-    pixels[x - 0, y + 1] = c
-    pixels[x + 7, y + 1] = c
-    pixels[x + 8, y + 1] = c
-    pixels[x - 8, y + 2] = c
-    pixels[x - 7, y + 2] = c
-
 def _stamp(image, stamp, x, y, w, h):
     stamp = stamp.resize([int(w), int(h)],Image.ANTIALIAS)
     left = x - int(w/2)
@@ -196,82 +169,31 @@ def _texture(image, texture, mask):
             tx.paste(texture, (left, top))
     image._fill(tx, mask)
 
-# TODO: complete and enable this one
-def _dynamic_draw_a_mountain(pixels, rng, x, y, w=3, h=3):
-    # mcl = (0, 0, 0, 255)  # TODO: No longer used?
-    # mcll = (128, 128, 128, 255)
-    mcr = (75, 75, 75, 255)
-    # left edge
-    last_leftborder = None
-    for mody in range(-h, h + 1):
-        bottomness = (float(mody + h) / 2.0) / w
+class Bitmap:
+    #self.h = None        #Height of area 'occupied' in map
+    #self.w = None        #Width of area 'occupied' in map
+    #self.r = None        #Area removed from mask
+    #self.ph = None       #Height of printed bitmap
+    #self.pw = None       #Width of printed bitmap
+    #self.img = None      #Bitmap image
 
-        min_leftborder = int(bottomness * w * 0.66)
-        if not last_leftborder == None:
-            min_leftborder = max(min_leftborder, last_leftborder - 1)
-        max_leftborder = int(bottomness * w * 1.33)
-        if not last_leftborder == None:
-            max_leftborder = min(max_leftborder, last_leftborder + 1)
-        leftborder = int(bottomness * w) + rng.randint(-2, 2)/2
-        if leftborder < min_leftborder:
-            leftborder = min_leftborder
-        if leftborder > max_leftborder:
-            leftborder = max_leftborder
-        last_leftborder = leftborder
+    def __init__(self, space, pw, ph, img):
+        self.space = space
+        self.ph = ph
+        self.pw = pw
+        self.img = img
+    
+class MapComponent:
 
-        darkarea = int(bottomness * w / 2)
-        lightarea = int(bottomness * w / 2)
-        for itx in range(darkarea, leftborder + 1):
-            pixels[x - itx, y + mody] = gradient(itx, darkarea, leftborder,
-                                                 (0, 0, 0), (64, 64, 64))
-        for itx in range(-darkarea, lightarea + 1):
-            pixels[x + itx, y + mody] = gradient(itx, -darkarea, lightarea,
-                                                 (64, 64, 64), (128, 128, 128))
-        for itx in range(lightarea, leftborder):
-            pixels[x + itx, y + mody] = (181, 166, 127, 255)  # land_color
-    # right edge
-    last_modx = None
-    for mody in range(-h, h + 1):
-        bottomness = (float(mody + h) / 2.0) / w
-        min_modx = int(bottomness * w * 0.66)
-        if not last_modx == None:
-            min_modx = max(min_modx, last_modx - 1)
-        max_modx = int(bottomness * w * 1.33)
-        if not last_modx == None:
-            max_modx = min(max_modx, last_modx + 1)
-        modx = int(bottomness * w) + numpy.random.randint(-2, 2)/2
-        if modx < min_modx:
-            modx = min_modx
-        if modx > max_modx:
-            modx = max_modx
-        last_modx = modx
-        pixels[x + modx, y + mody] = mcr
+    def __init__(self):
+        self.Type = None      #Valid types should be ICONS, TEXTURE, BOTH, or None
+        self.Bitmap = []
 
+    def add_bitmap(self, bitmap):
+        self.Bitmap.append(bitmap)
 
-def _draw_a_mountain(pixels, x, y, w=3, h=3):
-    # mcl = (0, 0, 0, 255)  # TODO: No longer used?
-    # mcll = (128, 128, 128, 255)
-    mcr = (75, 75, 75, 255)
-    # left edge
-    for mody in range(-h, h + 1):
-        bottomness = (float(mody + h) / 2.0) / w
-        leftborder = int(bottomness * w)
-        darkarea = int(bottomness * w / 2)
-        lightarea = int(bottomness * w / 2)
-        for itx in range(darkarea, leftborder + 1):
-            pixels[x - itx, y + mody] = gradient(itx, darkarea, leftborder,
-                                                 (0, 0, 0), (64, 64, 64))
-        for itx in range(-darkarea, lightarea + 1):
-            pixels[x + itx, y + mody] = gradient(itx, -darkarea, lightarea,
-                                                 (64, 64, 64), (128, 128, 128))
-        for itx in range(lightarea, leftborder):
-            pixels[x + itx, y + mody] = (181, 166, 127, 255)  # land_color
-    # right edge
-    for mody in range(-h, h + 1):
-        bottomness = (float(mody + h) / 2.0) / w
-        modx = int(bottomness * w)
-        pixels[x + modx, y + mody] = mcr        
-
+    def set_type(self, T):
+        self.Type = T
 
 def draw_ancientmap(world, target, resize_factor=1,
                     sea_color=(212, 198, 169, 255),
@@ -285,111 +207,100 @@ def draw_ancientmap(world, target, resize_factor=1,
 
     Icons = Image.open("worldengine/data/Icons.png")
 
-    Mountains = [Icons.crop((4,259,53,298)),
-                 Icons.crop((56,259,105,298)),
-                 Icons.crop((108,259,157,298)),
-                 Icons.crop((4,301,53,340)),
-                 Icons.crop((56,301,105,340))]
-
-    Hills = [Icons.crop((4,343,103,367)),
-             Icons.crop((4,370,103,394)),
-             Icons.crop((4,397,103,421))]
+    Mountain = MapComponent()
+    Mountain.add_bitmap(Bitmap(0,0,0,Icons.crop((4,259,53,298))))
+    Mountain.add_bitmap(Bitmap(0,0,0,Icons.crop((56,259,105,298))))
+    Mountain.add_bitmap(Bitmap(0,0,0,Icons.crop((108,259,157,298))))
+    Mountain.add_bitmap(Bitmap(0,0,0,Icons.crop((4,301,53,340))))
+    Mountain.add_bitmap(Bitmap(0,0,0,Icons.crop((56,301,105,340))))
     
-    Deserts = [Icons.crop((4,72,21,77)),
-               Icons.crop((24,72,41,77)),
-               Icons.crop((44,72,61,77))]
+    SnowMountain = MapComponent()
+    SnowMountain.add_bitmap(Bitmap(0,0,0,Icons.crop((160,259,209,298))))
+    SnowMountain.add_bitmap(Bitmap(0,0,0,Icons.crop((212,259,261,298))))
+    SnowMountain.add_bitmap(Bitmap(0,0,0,Icons.crop((264,259,313,298))))
+    SnowMountain.add_bitmap(Bitmap(0,0,0,Icons.crop((160,301,209,340))))
+    SnowMountain.add_bitmap(Bitmap(0,0,0,Icons.crop((212,301,261,340))))
 
-    Decids = [Icons.crop((4,4,15,18)),
-              Icons.crop((18,4,29,18)),
-              Icons.crop((32,4,43,18)),
-              Icons.crop((46,4,57,18)),
-              Icons.crop((60,4,71,18)),
-              Icons.crop((74,4,85,18))]
+    Hill = MapComponent()
+    Hill.add_bitmap(Bitmap(0,0,0,Icons.crop((4,343,103,367))))
+    Hill.add_bitmap(Bitmap(0,0,0,Icons.crop((4,370,103,394))))
+    Hill.add_bitmap(Bitmap(0,0,0,Icons.crop((4,397,103,421))))
 
-    Pines = [Icons.crop((4,38,15,52)),
-             Icons.crop((18,38,29,52)),
-             Icons.crop((32,38,43,52)),
-             Icons.crop((46,38,57,52)),
-             Icons.crop((60,38,71,52)),
-             Icons.crop((74,38,85,52))]
-
-    Jungles = [Icons.crop((4,21,15,35)),
-               Icons.crop((18,21,29,35)),
-               Icons.crop((32,21,43,35)),
-               Icons.crop((46,21,57,35)),
-               Icons.crop((60,21,71,35)),
-               Icons.crop((74,21,85,35))]
-
-    DryTropicals = [Icons.crop((4,55,15,69)),
-                    Icons.crop((18,55,29,69))]
-
-    Ice = Icons.crop((4,80,43,119))
-
-    Tundra = Icons.crop((46,122,85,161))
-
-    Parklands = Icons.crop((46,80,85,119))
-
-    Steppe = Icons.crop((4,122,43,161))
-
-    Chaparral = Icons.crop((4,164,83,196))
-
-    Savanna = Icons.crop((88,80,127,119))
-
-    CoolDesert = Icons.crop((4,199,83,256))
-
-    Water = Icons.crop((130, 4, 329, 203))
-
-    #Mountains = [Image.open("worldengine/data/mountain1.png"),
-    #             Image.open("worldengine/data/mountain2.png"),
-    #             Image.open("worldengine/data/mountain3.png"),
-    #             Image.open("worldengine/data/mountain4.png"),
-    #             Image.open("worldengine/data/mountain5.png")]
-
-    #Hills = [Image.open("worldengine/data/hill1.png"),
-    #         Image.open("worldengine/data/hill2.png"),
-    #         Image.open("worldengine/data/hill3.png")]
+    SnowHill = MapComponent()
+    SnowHill.add_bitmap(Bitmap(0,0,0,Icons.crop((370,343,469,367))))
+    SnowHill.add_bitmap(Bitmap(0,0,0,Icons.crop((370,370,469,394))))
+    SnowHill.add_bitmap(Bitmap(0,0,0,Icons.crop((370,397,469,421))))
     
-    #Deserts = [Image.open("worldengine/data/desert1.png"),
-    #           Image.open("worldengine/data/desert2.png"),
-    #           Image.open("worldengine/data/desert3.png")]
+    HotDesert = MapComponent()
+    HotDesert.add_bitmap(Bitmap(9,27,9,Icons.crop((33,70,59,78))))
+    HotDesert.add_bitmap(Bitmap(9,27,9,Icons.crop((62,70,88,78))))
+    HotDesert.add_bitmap(Bitmap(9,27,9,Icons.crop((91,70,117,78))))
 
-    #Decids = [Image.open("worldengine/data/decid1.png"),
-    #          Image.open("worldengine/data/decid2.png"),
-    #          Image.open("worldengine/data/decid3.png"),
-    #          Image.open("worldengine/data/decid4.png"),
-    #          Image.open("worldengine/data/decid5.png"),
-    #          Image.open("worldengine/data/decid6.png")]
+    Decid = MapComponent()
+    Decid.add_bitmap(Bitmap(6,12,15,Icons.crop((4,4,15,18))))
+    Decid.add_bitmap(Bitmap(6,12,15,Icons.crop((18,4,29,18))))
+    Decid.add_bitmap(Bitmap(6,12,15,Icons.crop((32,4,43,18))))
+    Decid.add_bitmap(Bitmap(6,12,15,Icons.crop((46,4,57,18))))
+    Decid.add_bitmap(Bitmap(6,12,15,Icons.crop((60,4,71,18))))
+    Decid.add_bitmap(Bitmap(6,12,15,Icons.crop((74,4,85,18))))
 
-    #Pines = [Image.open("worldengine/data/pine1.png"),
-    #         Image.open("worldengine/data/pine2.png"),
-    #         Image.open("worldengine/data/pine3.png"),
-    #         Image.open("worldengine/data/pine4.png"),
-    #         Image.open("worldengine/data/pine5.png"),
-    #         Image.open("worldengine/data/pine6.png")]
+    Pine = MapComponent()
+    Pine.add_bitmap(Bitmap(5,12,15,Icons.crop((4,38,15,52))))
+    Pine.add_bitmap(Bitmap(5,12,15,Icons.crop((18,38,29,52))))
+    Pine.add_bitmap(Bitmap(5,12,15,Icons.crop((32,38,43,52))))
+    Pine.add_bitmap(Bitmap(5,12,15,Icons.crop((46,38,57,52))))
+    Pine.add_bitmap(Bitmap(5,12,15,Icons.crop((60,38,71,52))))
+    Pine.add_bitmap(Bitmap(5,12,15,Icons.crop((74,38,85,52))))
 
-    #Jungles = [Image.open("worldengine/data/palm1.png"),
-    #           Image.open("worldengine/data/palm2.png"),
-    #           Image.open("worldengine/data/palm3.png"),
-    #           Image.open("worldengine/data/palm4.png"),
-    #           Image.open("worldengine/data/palm5.png"),
-    #           Image.open("worldengine/data/palm6.png")]
+    Mixed = MapComponent()
+    Mixed.add_bitmap(Bitmap(6,12,15,Icons.crop((4,4,15,18))))
+    Mixed.add_bitmap(Bitmap(6,12,15,Icons.crop((18,4,29,18))))
+    Mixed.add_bitmap(Bitmap(6,12,15,Icons.crop((32,4,43,18))))
+    Mixed.add_bitmap(Bitmap(6,12,15,Icons.crop((46,4,57,18))))
+    Mixed.add_bitmap(Bitmap(6,12,15,Icons.crop((60,4,71,18))))
+    Mixed.add_bitmap(Bitmap(6,12,15,Icons.crop((74,4,85,18))))
+    Mixed.add_bitmap(Bitmap(5,12,15,Icons.crop((4,38,15,52))))
+    Mixed.add_bitmap(Bitmap(5,12,15,Icons.crop((18,38,29,52))))
+    Mixed.add_bitmap(Bitmap(5,12,15,Icons.crop((32,38,43,52))))
+    Mixed.add_bitmap(Bitmap(5,12,15,Icons.crop((46,38,57,52))))
+    Mixed.add_bitmap(Bitmap(5,12,15,Icons.crop((60,38,71,52))))
+    Mixed.add_bitmap(Bitmap(5,12,15,Icons.crop((74,38,85,52))))
 
-    #DryTropicals = [Image.open("worldengine/data/DT1.png"),
-    #                Image.open("worldengine/data/DT2.png")]
+    Jungle = MapComponent()
+    Jungle.add_bitmap(Bitmap(6,12,15,Icons.crop((4,21,15,35))))
+    Jungle.add_bitmap(Bitmap(6,12,15,Icons.crop((18,21,29,35))))
+    Jungle.add_bitmap(Bitmap(6,12,15,Icons.crop((32,21,43,35))))
+    Jungle.add_bitmap(Bitmap(6,12,15,Icons.crop((46,21,57,35))))
+    Jungle.add_bitmap(Bitmap(6,12,15,Icons.crop((60,21,71,35))))
+    Jungle.add_bitmap(Bitmap(6,12,15,Icons.crop((74,21,85,35))))
 
-    #Ice = Image.open("worldengine/data/ice.png")
+    DryTropical = MapComponent()
+    DryTropical.add_bitmap(Bitmap(6,12,15,Icons.crop((4,55,15,69))))
+    DryTropical.add_bitmap(Bitmap(6,12,15,Icons.crop((18,55,29,69))))
 
-    #Tundra = Image.open("worldengine/data/tundra.png")
+    Ice = MapComponent()
+    Ice.add_bitmap(Bitmap(0,0,0,Icons.crop((4,80,43,119))))
 
-    #Parklands = Image.open("worldengine/data/parklands.png")
+    Tundra = MapComponent()
+    Tundra.add_bitmap(Bitmap(0,0,0,Icons.crop((46,122,85,161))))
 
-    #Steppe = Image.open("worldengine/data/steppe.png")
+    Parkland = MapComponent()
+    Parkland.add_bitmap(Bitmap(0,0,0,Icons.crop((46,80,85,119))))
 
-    #Chaparral = Image.open("worldengine/data/chaparral.png")
+    Steppe = MapComponent()
+    Steppe.add_bitmap(Bitmap(0,0,0,Icons.crop((4,122,43,161))))
 
-    #Savanna = Image.open("worldengine/data/savanna.png")
+    Chaparral = MapComponent()
+    Chaparral.add_bitmap(Bitmap(0,0,0,Icons.crop((4,164,83,196))))
 
-    #CoolDesert = Image.open("worldengine/data/CoolDesert.png")
+    Savanna = MapComponent()
+    Savanna.add_bitmap(Bitmap(0,0,0,Icons.crop((88,80,127,119))))
+
+    CoolDesert = MapComponent()
+    CoolDesert.add_bitmap(Bitmap(0,0,0,Icons.crop((4,199,83,256))))
+
+    Water = MapComponent()
+    Water.add_bitmap(Bitmap(0,0,0,Icons.crop((130, 4, 329, 203))))
 
     land_color = (
         181, 166, 127, 255)  # TODO: Put this in the argument list too??
@@ -469,8 +380,8 @@ def draw_ancientmap(world, target, resize_factor=1,
         for y in range(world.height):
             for x in range(world.width):
                 if world.is_land((x, y)) and (world.river_map[x, y] > 0.0):
-                    for dx in range(x*resize_factor-8,(x+1)*resize_factor+8):
-                        for dy in range(y*resize_factor,(y+1)*resize_factor+5):
+                    for dx in range(x*resize_factor-12,(x+1)*resize_factor+12):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+8):
                             unset_hot_desert_mask((dx, dy))
                     for dx in range(x*resize_factor-5,(x+1)*resize_factor+5):
                         for dy in range(y*resize_factor,(y+1)*resize_factor+14):
@@ -488,8 +399,8 @@ def draw_ancientmap(world, target, resize_factor=1,
                             unset_chaparral_mask((dx, dy))
                             unset_cool_desert_mask((dx, dy))
                 if world.is_land((x, y)) and (world.lake_map[x, y] != 0):
-                    for dx in range(x*resize_factor-8,(x+1)*resize_factor+8):
-                        for dy in range(y*resize_factor,(y+1)*resize_factor+5):
+                    for dx in range(x*resize_factor-12,(x+1)*resize_factor+12):
+                        for dy in range(y*resize_factor,(y+1)*resize_factor+8):
                             unset_hot_desert_mask((dx, dy))
                     for dx in range(x*resize_factor-5,(x+1)*resize_factor+5):
                         for dy in range(y*resize_factor,(y+1)*resize_factor+14):
@@ -518,7 +429,7 @@ def draw_ancientmap(world, target, resize_factor=1,
         for x in range(resize_factor * world.width):
             target.set_pixel(x, y, sea_color)
 
-    _texture(target, Water, water_mask)
+    _texture(target, Water.Bitmap[0].img, water_mask)
     
     if verbose:
         start_time = time.time()
@@ -585,119 +496,105 @@ def draw_ancientmap(world, target, resize_factor=1,
     # Draw texture biomes
     if draw_biome:
         print("Drawing textures")
-        _texture(target, Ice, ice_mask)
-        _texture(target, Tundra, tundra_mask)
-        _texture(target, Parklands, parklands_mask)
-        _texture(target, Steppe, steppe_mask)
-        _texture(target, Chaparral, chaparral_mask)
-        _texture(target, Savanna, savanna_mask)
-        _texture(target, CoolDesert, cool_desert_mask)
+        _texture(target, Ice.Bitmap[0].img, ice_mask)
+        _texture(target, Tundra.Bitmap[0].img, tundra_mask)
+        _texture(target, Parkland.Bitmap[0].img, parklands_mask)
+        _texture(target, Steppe.Bitmap[0].img, steppe_mask)
+        _texture(target, Chaparral.Bitmap[0].img, chaparral_mask)
+        _texture(target, Savanna.Bitmap[0].img, savanna_mask)
+        _texture(target, CoolDesert.Bitmap[0].img, cool_desert_mask)
              
         # Draw icons
         print("Drawing icons")
         for y in range(resize_factor * world.height):
             for x in range(resize_factor * world.width):
-                pos = (x,y)
-                        
+                pos = (x, y)
+                fx = int(x/resize_factor)
+                fy = int(y/resize_factor)
+                
                 if hot_desert_mask.getpixel(pos)[3] == 255:
-                    w = 6
-                    h = 2
-                    r = 6
+                    m = int(len(HotDesert.Bitmap) * rng.random_sample())
+                    r = HotDesert.Bitmap[m].space
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        d = int(len(Deserts) * rng.random_sample())
-                        _stamp(target, Deserts[d], x, y, w=w*3, h=h*3)
+                        _stamp(target, HotDesert.Bitmap[m].img, x, y, w=HotDesert.Bitmap[m].pw, h=HotDesert.Bitmap[m].ph)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      action=unset_hot_desert_mask)
                         
                 if boreal_forest_mask.getpixel(pos)[3] == 255:
-                    w = 4
-                    h = 5
-                    r = 5
+                    m = int(len(Pine.Bitmap) * rng.random_sample())
+                    r = Pine.Bitmap[m].space
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        m = int(len(Pines) * rng.random_sample())
-                        _stamp(target, Pines[m], x, y, w=w*3, h=h*3)
+                        
+                        _stamp(target, Pine.Bitmap[m].img, x, y, w=Pine.Bitmap[m].pw, h=Pine.Bitmap[m].ph)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
                             action=unset_boreal_forest_mask)
 
                 if temperate_forest_mask.getpixel(pos)[3] == 255:
-                    w = 4
-                    h = 5
+                    m = int(len(Mixed.Bitmap) * rng.random_sample())
+                    r = Mixed.Bitmap[m].space
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        if rng.random_sample() <= .5:
-                            m = int(len(Pines) * rng.random_sample())
-                            _stamp(target, Pines[m], x, y, w=w*3, h=h*3)
-                            r = 5
-                        else:
-                            m = int(len(Decids) * rng.random_sample())
-                            _stamp(target, Decids[m], x, y, w=w*3, h=h*3)
-                            r = 6
+                        _stamp(target, Mixed.Bitmap[m].img, x, y, w=Mixed.Bitmap[m].pw, h=Mixed.Bitmap[m].ph)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
                             action=unset_temperate_forest_mask)
 
                 if warm_temperate_forest_mask.getpixel(pos)[3] == 255:
-                    w = 4
-                    h = 5
-                    r = 6
+                    m = int(len(Decid.Bitmap) * rng.random_sample())
+                    r = Decid.Bitmap[m].space
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        m = int(len(Decids) * rng.random_sample())
-                        _stamp(target, Decids[m], x, y, w=w*3, h=h*3)
+                        _stamp(target, Decid.Bitmap[m].img, x, y, w=Decid.Bitmap[m].pw, h=Decid.Bitmap[m].ph)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
                             action=unset_warm_temperate_forest_mask)
 
                 if tropical_dry_forest_mask.getpixel(pos)[3] == 255:
-                    w = 4
-                    h = 5
-                    r = 6
+                    m = int(len(DryTropical.Bitmap) * rng.random_sample())
+                    r = DryTropical.Bitmap[m].space
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        m = int(len(DryTropicals) * rng.random_sample())
-                        _stamp(target, DryTropicals[m], x, y, w=w*3, h=h*3)
+                        _stamp(target, DryTropical.Bitmap[m].img, x, y, w=DryTropical.Bitmap[m].pw, h=DryTropical.Bitmap[m].ph)
                         world.on_tiles_around_factor(
                             resize_factor, (x, y),
                             radius=r,
                             action=unset_tropical_dry_forest_mask)
                 
                 if jungle_mask.getpixel(pos)[3] == 255:
-                    w = 4
-                    h = 5
-                    r = 5
+                    m = int(len(Jungle.Bitmap) * rng.random_sample())
+                    r = Jungle.Bitmap[m].space
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        m = int(len(Jungles) * rng.random_sample())
-                        _stamp(target, Jungles[m], x, y, w=w*3, h=h*3)
+                        _stamp(target, Jungle.Bitmap[m].img, x, y, w=Jungle.Bitmap[m].pw, h=Jungle.Bitmap[m].ph)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      action=unset_jungle_mask)
 
-                if mountains_mask[y, x] > 8.5:
+                if mountains_mask[y, x] > 8.5 and not world.is_temperature_polar((fx,fy)):
                     h = int(mountains_mask[y, x] * 2 / 3) * 2
                     w = int(h * 3 / 2)
                     r = max(int(w / 3 * 2), h)
                     if len(world.tiles_around_factor(resize_factor, (x, y),
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
-                        m = int(len(Mountains) * rng.random_sample())
-                        _stamp(target, Mountains[m], x, y, w=w*2, h=h*2)
+                        m = int(len(Mountain.Bitmap) * rng.random_sample())
+                        _stamp(target, Mountain.Bitmap[m].img, x, y, w=w*2, h=h*2)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r, action=unset_mask)
-                if mountains_mask[y, x] > 0 and mountains_mask[y, x] <= 8.5:
+                if mountains_mask[y, x] > 0 and mountains_mask[y, x] <= 8.5 and not world.is_temperature_polar((fx,fy)):
                     h = int(mountains_mask[y, x] * 2 / 3) * 2
                     w = int(h * (4 / ( 1 + (h/3.4)) ))
                     r = max(int(w / 3 * 2), h)
@@ -705,8 +602,32 @@ def draw_ancientmap(world, target, resize_factor=1,
                                                      radius=r,
                                                      predicate=on_border)) <= 2:
                         
-                        m = int(len(Hills) * rng.random_sample())
-                        _stamp(target, Hills[m], x, y, w=w*2, h=h*2)
+                        m = int(len(Hill.Bitmap) * rng.random_sample())
+                        _stamp(target, Hill.Bitmap[m].img, x, y, w=w*2, h=h*2)
+                        world.on_tiles_around_factor(resize_factor, (x, y),
+                                                     radius=r, action=unset_mask)
+                        
+                if mountains_mask[y, x] > 8.5 and world.is_temperature_polar((fx,fy)):
+                    h = int(mountains_mask[y, x] * 2 / 3) * 2
+                    w = int(h * 3 / 2)
+                    r = max(int(w / 3 * 2), h)
+                    if len(world.tiles_around_factor(resize_factor, (x, y),
+                                                     radius=r,
+                                                     predicate=on_border)) <= 2:
+                        m = int(len(SnowMountain.Bitmap) * rng.random_sample())
+                        _stamp(target, SnowMountain.Bitmap[m].img, x, y, w=w*2, h=h*2)
+                        world.on_tiles_around_factor(resize_factor, (x, y),
+                                                     radius=r, action=unset_mask)
+                if mountains_mask[y, x] > 0 and mountains_mask[y, x] <= 8.5 and world.is_temperature_polar((fx,fy)):
+                    h = int(mountains_mask[y, x] * 2 / 3) * 2
+                    w = int(h * (4 / ( 1 + (h/3.4)) ))
+                    r = max(int(w / 3 * 2), h)
+                    if len(world.tiles_around_factor(resize_factor, (x, y),
+                                                     radius=r,
+                                                     predicate=on_border)) <= 2:
+                        
+                        m = int(len(SnowHill.Bitmap) * rng.random_sample())
+                        _stamp(target, SnowHill.Bitmap[m].img, x, y, w=w*2, h=h*2)
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r, action=unset_mask)
 
