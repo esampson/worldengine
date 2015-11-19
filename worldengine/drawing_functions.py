@@ -125,9 +125,7 @@ def _mask(world, predicate, factor):
                     _mask[y, x] = v
     return _mask
 
-<<<<<<< HEAD
 def _createmask(world, predicate, factor, odds=1):
-    print(odds)
     rng = numpy.random.RandomState(world.seed)
     width = world.width * factor
     height = world.height * factor
@@ -148,12 +146,11 @@ def _stamp(image, stamp, x, y, w, h):
     stamp = stamp.resize([int(w), int(h)],Image.ANTIALIAS)
     left = x - int(w/2)
     top = y - int(h)
-    image._paste(stamp, (left, top))
+    image.paste(stamp, (left, top), stamp)
 
 def _texture(image, texture, mask):
-    size = image._size()
-    width = size[0]
-    height = size[1]
+    width = image.width
+    height = image.height
     width = int(width)
     height = int(height)
     tx = Image.new("RGBA", (width,height))
@@ -168,7 +165,7 @@ def _texture(image, texture, mask):
             left = x * texture.size[0]
             top = y * texture.size[1]
             tx.paste(texture, (left, top))
-    image._fill(tx, mask)
+    image.paste(tx, (0,0), mask)
 
 class Bitmap:
     #self.h = None        #Height of area 'occupied' in map
@@ -383,14 +380,34 @@ def draw_ancientmap(world, target, resize_factor=1,
                 if world.is_land((x, y)) and (world.river_map[x, y] > 0.0):
                     for dx in range(x*resize_factor-12,(x+1)*resize_factor+12):
                         for dy in range(y*resize_factor,(y+1)*resize_factor+8):
-                            unset_hot_desert_mask((dx, dy))
+                            fx = dx
+                            fy = dy
+                            if fx > world.width * resize_factor:
+                                fx = world.width * resize_factor
+                            if fy > world.height * resize_factor:
+                                fy = world.height * resize_factor
+                            if fx < 0:
+                                fx = 0
+                            if fy < 0:
+                                fy = 0
+                            unset_hot_desert_mask((fx, fy))
                     for dx in range(x*resize_factor-5,(x+1)*resize_factor+5):
                         for dy in range(y*resize_factor,(y+1)*resize_factor+14):
-                            unset_boreal_forest_mask((dx, dy))
-                            unset_temperate_forest_mask((dx, dy))
-                            unset_warm_temperate_forest_mask((dx, dy))
-                            unset_tropical_dry_forest_mask((dx, dy))
-                            unset_jungle_mask((dx, dy))
+                            fx = dx
+                            fy = dy
+                            if fx > world.width * resize_factor:
+                                fx = world.width * resize_factor
+                            if fy > world.height * resize_factor:
+                                fy = world.height * resize_factor
+                            if fx < 0:
+                                fx = 0
+                            if fy < 0:
+                                fy = 0
+                            unset_boreal_forest_mask((fx, fy))
+                            unset_temperate_forest_mask((fx, fy))
+                            unset_warm_temperate_forest_mask((fx, fy))
+                            unset_tropical_dry_forest_mask((fx, fy))
+                            unset_jungle_mask((fx, fy))
                     for dx in range(x*resize_factor,(x+1)*resize_factor):
                         for dy in range(y*resize_factor,(y+1)*resize_factor):
                             unset_tundra_mask((dx, dy))
@@ -428,7 +445,7 @@ def draw_ancientmap(world, target, resize_factor=1,
 
     for y in range(resize_factor * world.height):
         for x in range(resize_factor * world.width):
-            target.set_pixel(x, y, sea_color)
+            target.putpixel((x, y), sea_color)
 
     _texture(target, Water.Bitmap[0].img, water_mask)
     
@@ -441,11 +458,11 @@ def draw_ancientmap(world, target, resize_factor=1,
             xf = int(x / resize_factor)
             yf = int(y / resize_factor)
             if borders[y, x]:
-                target.set_pixel(x, y, border_color)
+                target.putpixel((x, y), border_color)
             elif draw_outer_land_border and outer_borders[y, x]:
-                target.set_pixel(x, y, outer_border_color)
+                target.putpixel((x, y), outer_border_color)
             elif not world.ocean[yf, xf]:
-                target.set_pixel(x, y, land_color)
+                target.putpixel((x, y), land_color)
             #else:
             #    target.set_pixel(x, y, land_color)
     if verbose:
@@ -466,9 +483,9 @@ def draw_ancientmap(world, target, resize_factor=1,
 
         def _anti_alias_point(x, y):
             n = 2
-            tot_r = target[y, x][0] * 2
-            tot_g = target[y, x][1] * 2
-            tot_b = target[y, x][2] * 2
+            tot_r = target.getpixel((x,y))[0] * 2
+            tot_g = target.getpixel((x,y))[1] * 2
+            tot_b = target.getpixel((x,y))[2] * 2
             for dy in range(-1, +2):
                 py = y + dy
                 if py > 0 and py < resize_factor * world.height:
@@ -476,13 +493,13 @@ def draw_ancientmap(world, target, resize_factor=1,
                         px = x + dx
                         if px > 0 and px < resize_factor * world.width:
                             n += 1
-                            tot_r += target[py, px][0]
-                            tot_g += target[py, px][1]
-                            tot_b += target[py, px][2]
+                            tot_r += target.getpixel((px, py))[0]
+                            tot_g += target.getpixel((px, py))[1]
+                            tot_b += target.getpixel((px, py))[2]
             r = int(tot_r / n)
             g = int(tot_g / n)
             b = int(tot_b / n)
-            target[y, x] = (r, g, b, 255)
+            target.putpixel((x, y) ,(r, g, b, 255))
 
         for i in range(steps):
             _anti_alias_step()
@@ -633,9 +650,9 @@ def draw_ancientmap(world, target, resize_factor=1,
                                                      radius=r, action=unset_mask)
 
                 if world.is_land((fx, fy)) and (world.river_map[fx, fy] > 0.0):
-                    target.set_pixel(x, y, (0, 0, 128, 255))
+                    target.putpixel((x, y), (0, 0, 128, 255))
                 if world.is_land((fx, fy)) and (world.lake_map[fx, fy] != 0):
-                    target.set_pixel(x, y, (0, 100, 128, 255))
+                    target.putpixel((x, y), (0, 100, 128, 255))
 
     #if draw_rivers:
     #    print("Drawing rivers")
