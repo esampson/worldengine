@@ -9,6 +9,7 @@ from worldengine.simulations.permeability import PermeabilitySimulation
 from worldengine.simulations.erosion import ErosionSimulation
 from worldengine.simulations.precipitation import PrecipitationSimulation
 from worldengine.simulations.biome import BiomeSimulation
+from worldengine.simulations.icecap import IcecapSimulation
 from worldengine.common import anti_alias, get_verbose
 import numpy
 
@@ -21,39 +22,19 @@ def center_land(world):
     """Translate the map horizontally and vertically to put as much ocean as
        possible at the borders. It operates on elevation and plates map"""
 
-    min_sum_on_y = None
-    y_with_min_sum = None
-    latshift = 0
-    for y in range(world.height):
-        sum_on_y = world.elevation['data'][y].sum()
-        if min_sum_on_y is None or sum_on_y < min_sum_on_y:
-            min_sum_on_y = sum_on_y
-            y_with_min_sum = y
+    y_sums = world.elevation['data'].sum(1)  # 1 == sum along x-axis
+    y_with_min_sum = y_sums.argmin()
     if get_verbose():
         print("geo.center_land: height complete")
 
-    min_sum_on_x = None
-    x_with_min_sum = None
-    for x in range(world.width):
-        sum_on_x = world.elevation['data'].T[x].sum()
-        if min_sum_on_x is None or sum_on_x < min_sum_on_x:
-            min_sum_on_x = sum_on_x
-            x_with_min_sum = x
+    x_sums = world.elevation['data'].sum(0)  # 0 == sum along y-axis
+    x_with_min_sum = x_sums.argmin()
     if get_verbose():
         print("geo.center_land: width complete")
 
-    new_elevation_data = [] #TODO: this should fully use numpy
-    new_plates = []
-    for y in range(world.height):
-        new_elevation_data.append([])
-        new_plates.append([])
-        src_y = (y_with_min_sum + y - latshift) % world.height
-        for x in range(world.width):
-            src_x = (x_with_min_sum + x) % world.width
-            new_elevation_data[y].append(world.elevation['data'][src_y, src_x])
-            new_plates[y].append(world.plates[src_y][src_x])
-    world.elevation['data'] = numpy.array(new_elevation_data)
-    world.plates = new_plates
+    latshift = 0
+    world.elevation['data'] = numpy.roll(numpy.roll(world.elevation['data'], -y_with_min_sum + latshift, axis=0), -x_with_min_sum, axis=1)
+    world.plates = numpy.roll(numpy.roll(world.plates, -y_with_min_sum + latshift, axis=0), -x_with_min_sum, axis=1)
     if get_verbose():
         print("geo.center_land: width complete")
 
@@ -124,8 +105,8 @@ def initialize_ocean_and_thresholds(world, ocean_level=1.0):
     """
     e = world.elevation['data']
     ocean = fill_ocean(e, ocean_level)
-    hl = find_threshold_f(e, 0.10)
-    ml = find_threshold_f(e, 0.03)
+    hl = find_threshold_f(e, 0.10)  # the highest 10% of all (!) land are declared hills
+    ml = find_threshold_f(e, 0.03)  # the highest 3% are declared mountains
     e_th = [('sea', ocean_level),
             ('plain', hl),
             ('hill', ml),
@@ -210,6 +191,7 @@ def generate_world(w, step):
                  'HumiditySimulation':      sub_seeds[ 5],
                  'PermeabilitySimulation':  sub_seeds[ 6],
                  'BiomeSimulation':         sub_seeds[ 7],
+                 'IcecapSimulation':        sub_seeds[ 8],
                  '':                        sub_seeds[99]
     }
 
@@ -229,7 +211,6 @@ def generate_world(w, step):
     IrrigationSimulation().execute(w, seed_dict['IrrigationSimulation'])  # seed not currently used
     HumiditySimulation().execute(w, seed_dict['HumiditySimulation'])  # seed not currently used
 
-    
     PermeabilitySimulation().execute(w, seed_dict['PermeabilitySimulation'])
 
     cm, biome_cm = BiomeSimulation().execute(w, seed_dict['BiomeSimulation'])  # seed not currently used
@@ -246,5 +227,7 @@ def generate_world(w, step):
         count = biome_cm[cl]
         if get_verbose():
             print(" %30s = %7i" % (str(cl), count))
+
+    IcecapSimulation().execute(w, seed_dict['IcecapSimulation'])  # makes use of temperature-map
 
     return w

@@ -1,4 +1,3 @@
-import pickle
 import numpy
 
 from worldengine.biome import Biome, BorealDesert, BorealDryScrub, BorealMoistForest, \
@@ -16,6 +15,7 @@ import worldengine.protobuf.World_pb2 as Protobuf
 from worldengine.step import Step
 from worldengine.common import _equal
 from worldengine.version import __version__
+
 
 class World(object):
     """A world composed by name, dimensions and all the characteristics of
@@ -48,15 +48,6 @@ class World(object):
     #
     # Serialization/Unserialization
     #
-
-    @classmethod
-    def from_pickle_file(cls, filename):
-        with open(filename, "rb") as f:
-            return pickle.load(f)
-
-    def to_pickle_file(self, filename):
-        with open(filename, "wb") as f:
-            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def from_dict(cls, dict):
@@ -98,6 +89,8 @@ class World(object):
                 '''
                 if type(cell) is numpy.bool_:
                     value = bool(cell)
+                elif type(cell) is numpy.uint16:
+                    value = int(cell)
                 else:
                     value = cell
                 if transformation:
@@ -233,6 +226,9 @@ class World(object):
             p_world.temperature_subtropical = \
                 self.temperature['thresholds'][5][1]
 
+        if hasattr(self, 'icecap'):
+            self._to_protobuf_matrix(self.icecap, p_world.icecap)
+
         return p_world
 
     @classmethod
@@ -252,7 +248,7 @@ class World(object):
         w.set_elevation(e, e_th)
 
         # Plates
-        w.set_plates(World._from_protobuf_matrix(p_world.plates))
+        w.set_plates(numpy.array(World._from_protobuf_matrix(p_world.plates)))
 
         # Ocean
         w.set_ocean(numpy.array(World._from_protobuf_matrix(p_world.ocean)))
@@ -321,6 +317,9 @@ class World(object):
         if len(p_world.rivermap.rows) > 0:
             m = numpy.array(World._from_protobuf_matrix(p_world.rivermap))
             w.set_rivermap(m)
+
+        if len(p_world.icecap.rows) > 0:
+            w.icecap = numpy.array(World._from_protobuf_matrix(p_world.icecap))
 
         return w
 
@@ -793,11 +792,7 @@ class World(object):
     #
 
     def n_actual_plates(self):
-        res = -1
-        for row in self.plates:
-            for cell in row:
-                res = max([cell, res])
-        return res + 1
+        return self.plates.max() + 1
 
     #
     # Setters
@@ -812,11 +807,11 @@ class World(object):
         self.elevation = {'data': data, 'thresholds': thresholds}
 
     def set_plates(self, data):
-        if (len(data) != self.height) or (len(data[0]) != self.width):
+        if (data.shape[0] != self.height) or (data.shape[1] != self.width):
             raise Exception(
                 "Setting plates map with wrong dimension. "
                 "Expected %d x %d, found %d x %d" % (
-                    self.width, self.height, len(data[0]), len(data)))
+                    self.width, self.height, data.shape[1], data.shape[0]))
         self.plates = data
 
     def set_biome(self, biome):
@@ -864,6 +859,9 @@ class World(object):
             raise Exception("Setting data with wrong width")
 
         self.permeability = {'data': data, 'thresholds': thresholds}
+
+    def has_ocean(self):
+        return hasattr(self, 'ocean')
 
     def has_precipitations(self):
         return hasattr(self, 'precipitation')

@@ -1,9 +1,8 @@
-from PIL import Image
 import numpy
-import numpy.ma as ma
 
 from worldengine.drawing_functions import draw_ancientmap, \
     draw_rivers_on_image
+from worldengine.image_io import PNGWriter
 
 # -------------
 # Helper values
@@ -218,7 +217,8 @@ def elevation_color(elevation, sea_level=1.0):
 def add_colors(*args):
     ''' Do some *args magic to return a tuple, which has the sums of all tuples in *args '''
     # Adapted from an answer here: http://stackoverflow.com/questions/14180866/sum-each-value-in-a-list-of-tuples
-    return tuple([sum(x) for x in zip(*args)])
+    added = [sum(x) for x in zip(*args)]
+    return numpy.clip(added, 0, 255)  # restrict to uint8
 
 def average_colors(c1, c2):
     ''' Average the values of two colors together '''
@@ -252,7 +252,7 @@ def get_normalized_elevation_array(world):
     return c
 
 
-def get_biome_color_based_on_elevation(world, elev, x, y):
+def get_biome_color_based_on_elevation(world, elev, x, y, rng):
     ''' This is the "business logic" for determining the base biome color in satellite view.
         This includes generating some "noise" at each spot in a pixel's rgb value, potentially 
         modifying the noise based on elevation, and finally incorporating this with the base biome color. 
@@ -265,7 +265,9 @@ def get_biome_color_based_on_elevation(world, elev, x, y):
 
         The biome's base color may be interpolated with a predefined mountain brown color if the elevation is high enough.
 
-        Finally, the noise plus the biome color are added and returned
+        Finally, the noise plus the biome color are added and returned.
+
+        rng refers to an instance of a random number generator used to draw the random samples needed by this function.
     '''
     v = world.biome[y, x]
     biome_color = _biome_satellite_colors[v]
@@ -277,9 +279,8 @@ def get_biome_color_based_on_elevation(world, elev, x, y):
         ## Generate some random noise to apply to this pixel
         #  There is noise for each element of the rgb value
         #  This noise will be further modified by the height of this tile
-        noise = (numpy.random.randint(-NOISE_RANGE, NOISE_RANGE), 
-                 numpy.random.randint(-NOISE_RANGE, NOISE_RANGE), 
-                 numpy.random.randint(-NOISE_RANGE, NOISE_RANGE))
+
+        noise = rng.randint(-NOISE_RANGE, NOISE_RANGE, size=3)  # draw three random numbers at once
 
         ####### Case 1 - elevation is very high ########
         if elev > HIGH_MOUNTAIN_ELEV:     
@@ -308,51 +309,12 @@ def get_biome_color_based_on_elevation(world, elev, x, y):
     base_elevation_modifier = (modification_amount, modification_amount, modification_amount)
 
     this_tile_color = add_colors(biome_color, noise, base_elevation_modifier)
-
     return this_tile_color
+
+
 # ----------------------
 # Draw on generic target
 # ----------------------
-
-
-class ImagePixelSetter(object):
-
-    def __init__(self, width, height, filename):
-        self.img = Image.new('RGBA', (width, height))
-        self.pixels = self.img.load()
-        self.filename = filename
-
-    def set_pixel(self, x, y, color):
-        if len(color) == 3:  # Convert RGB to RGBA - TODO: go through code to fix this
-            color = (color[0], color[1], color[2], 255)
-        self.pixels[x, y] = color
-
-    def _paste(self, source, location):
-        self.img.paste(source, location, source)
-
-    def _fill(self, source, mask):
-        self.img.paste(source, (0,0), mask)
-
-    def _size(self):
-        return self.img.size
-
-    def complete(self):
-        try:
-            self.img.save(self.filename)
-        except KeyError:
-            print("Cannot save to file `{}`, unsupported file format.".format(self.filename))
-            filename = self.filename+".png"
-            print("Defaulting to PNG: `{}`".format(filename))
-            self.img.save(filename)
-
-    def __getitem__(self, item):
-        return self.pixels[item]
-
-    def __setitem__(self, item, value):
-        if len(value) == 3:  # Convert RGB to RGBA - TODO: go through code to fix this
-            value = (value[0], value[1], value[2], 255)
-        self.pixels[item] = value
-
 
 def draw_simple_elevation(world, sea_level, target):
     """ This function can be used on a generic canvas (either an image to save
@@ -393,7 +355,7 @@ def draw_riversmap(world, target):
 
     for y in range(world.height):
         for x in range(world.width):
-            target.set_pixel(x, y, sea_color if world.is_ocean((x, y)) else land_color)    
+            target.set_pixel(x, y, sea_color if world.is_ocean((x, y)) else land_color)
 
     draw_rivers_on_image(world, target, factor=1)
 
@@ -407,10 +369,13 @@ def draw_grayscale_heightmap(world, target):
 
 
 def draw_satellite(world, target):
-    ''' This draws a "satellit map" - a view of the generated planet as it may look from space '''
+    ''' This draws a "satellite map" - a view of the generated planet as it may look from space '''
 
     # Get an elevation mask where heights are normalized between 0 and 255
     elevation_mask = get_normalized_elevation_array(world)
+    smooth_mask = numpy.invert(world.ocean)  # all land shall be smoothed (other tiles can be included by setting them to True)
+
+    rng = numpy.random.RandomState(world.seed)  # create our own random generator; necessary for now to make the tests reproducible, even though it is a bit ugly
 
     ## The first loop sets each pixel's color based on colors defined in _biome_satellite_colors
     #  and additional "business logic" defined in get_biome_color_based_on_elevation
@@ -420,18 +385,26 @@ def draw_satellite(world, target):
             elev = elevation_mask[y, x]
             
             # Get a rgb noise value, with some logic to modify it based on the elevation of the tile
-            r, g, b = get_biome_color_based_on_elevation(world, elev, x, y)
+            r, g, b = get_biome_color_based_on_elevation(world, elev, x, y, rng)
 
             # Set pixel to this color. This initial color will be accessed and modified later when 
             # the map is smoothed and shaded.
             target.set_pixel(x, y, (r, g, b, 255))
 
+    # Paint frozen areas.
+    ice_color_variation = int(30)  # 0 means perfectly white ice; must be in [0, 255]; only affects R- and G-channel
+    for y in range(world.height):
+        for x in range(world.width):
+            if world.icecap[y, x] > 0.0:
+                smooth_mask[y, x] = True  # smooth the frozen areas, too
+                variation = rng.randint(0, ice_color_variation)
+                target.set_pixel(x, y, (255 - ice_color_variation + variation, 255 - ice_color_variation + variation, 255, 255))
 
     # Loop through and average a pixel with its neighbors to smooth transitions between biomes
     for y in range(1, world.height-1):
         for x in range(1, world.width-1):
             ## Only smooth land tiles
-            if world.is_land((x, y)):
+            if smooth_mask[y, x]:
                 # Lists to hold the separated rgb values of the neighboring pixels
                 all_r = []
                 all_g = []
@@ -441,9 +414,9 @@ def draw_satellite(world, target):
                 for j in range(y-1, y+2):
                     for i in range(x-1, x+2):
                         # Don't include ocean in the smoothing, if this tile happens to border an ocean
-                        if world.is_land((i, j)):
+                        if smooth_mask[j, i]:
                             # Grab each rgb value and append to the list
-                            r, g, b, a = target.pixels[i, j]
+                            r, g, b, a = target[j, i]
                             all_r.append(r)
                             all_g.append(g)
                             all_b.append(b)
@@ -457,30 +430,28 @@ def draw_satellite(world, target):
                     ## Setting color of the pixel again - this will be once more modified by the shading algorithm
                     target.set_pixel(x, y, (avg_r, avg_g, avg_b, 255))
 
-
     ## After smoothing, draw rivers
     for y in range(world.height):
         for x in range(world.width):
             ## Color rivers
-            if world.is_land((x, y)) and (world.river_map[x, y] > 0.0):
-                base_color = target.pixels[x, y]
+            if world.is_land((x, y)) and (world.river_map[y, x] > 0.0):
+                base_color = target[y, x]
 
                 r, g, b = add_colors(base_color, RIVER_COLOR_CHANGE)
                 target.set_pixel(x, y, (r, g, b, 255))
 
             ## Color lakes
-            if world.is_land((x, y)) and (world.lake_map[x, y] != 0):
-                base_color = target.pixels[x, y]
+            if world.is_land((x, y)) and (world.lake_map[y, x] != 0):
+                base_color = target[y, x]
 
                 r, g, b = add_colors(base_color, LAKE_COLOR_CHANGE)
                 target.set_pixel(x, y, (r, g, b, 255))
-
 
     # "Shade" the map by sending beams of light west to east, and increasing or decreasing value of pixel based on elevation difference
     for y in range(SAT_SHADOW_SIZE-1, world.height-SAT_SHADOW_SIZE-1):
         for x in range(SAT_SHADOW_SIZE-1, world.width-SAT_SHADOW_SIZE-1):
             if world.is_land((x, y)):
-                r, g, b, a = target.pixels[x, y]
+                r, g, b, a = target[y, x]
                 
                 # Build up list of elevations in the previous n tiles, where n is the shadow size.
                 # This goes northwest to southeast
@@ -498,9 +469,9 @@ def draw_satellite(world, target):
                 # The amplified difference is now translated into the rgb of the tile.
                 # This adds light to tiles higher that the previous average, and shadow
                 # to tiles lower than the previous average
-                r += adjusted_difference
-                g += adjusted_difference
-                b += adjusted_difference
+                r = numpy.clip(adjusted_difference + r, 0, 255)  # prevent under-/overflows
+                g = numpy.clip(adjusted_difference + g, 0, 255)
+                b = numpy.clip(adjusted_difference + b, 0, 255)
 
                 # Set the final color for this pixel
                 target.set_pixel(x, y, (r, g, b, 255))
@@ -561,7 +532,7 @@ def draw_precipitation(world, target, black_and_white=False):
         low = world.precipitation['data'].min()
         high = world.precipitation['data'].max()
         floor = 0
-        ceiling = 255
+        ceiling = 255  # could be changed into 16 Bit grayscale easily
 
         colors = numpy.interp(world.precipitation['data'], [low, high], [floor, ceiling])
         colors = numpy.rint(colors).astype(dtype=numpy.int32)  # proper rounding
@@ -611,7 +582,7 @@ def draw_temperature_levels(world, target, black_and_white=False):
         low = world.temperature_thresholds()[0][1]
         high = world.temperature_thresholds()[5][1]
         floor = 0
-        ceiling = 255
+        ceiling = 255  # could be changed into 16 Bit grayscale easily
 
         colors = numpy.interp(world.temperature['data'], [low, high], [floor, ceiling])
         colors = numpy.rint(colors).astype(dtype=numpy.int32)  # proper rounding
@@ -657,8 +628,8 @@ def draw_scatter_plot(world, size, target):
 
     #Find min and max values of humidity and temperature on land so we can
     #normalize temperature and humidity to the chart
-    humid = ma.masked_array(world.humidity['data'], mask=world.ocean)
-    temp = ma.masked_array(world.temperature['data'], mask=world.ocean)
+    humid = numpy.ma.masked_array(world.humidity['data'], mask=world.ocean)
+    temp = numpy.ma.masked_array(world.temperature['data'], mask=world.ocean)
     min_humidity = humid.min()
     max_humidity = humid.max()
     min_temperature = temp.min()
@@ -769,56 +740,56 @@ def draw_scatter_plot(world, size, target):
 
 
 def draw_simple_elevation_on_file(world, filename, sea_level):
-    img = ImagePixelSetter(world.width, world.height, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
     draw_simple_elevation(world, sea_level, img)
     img.complete()
 
 
 def draw_riversmap_on_file(world, filename):
-    img = ImagePixelSetter(world.width, world.height, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
     draw_riversmap(world, img)
     img.complete()
 
 
 def draw_grayscale_heightmap_on_file(world, filename):
-    img = ImagePixelSetter(world.width, world.height, filename)
-    draw_grayscale_heightmap(world, img)
+    img = PNGWriter.grayscale_from_array(world.elevation['data'], filename, scale_to_range=True)
+    #draw_grayscale_heightmap(world, img)
     img.complete()
 
 
 def draw_elevation_on_file(world, filename, shadow=True):
-    img = ImagePixelSetter(world.width, world.height, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
     draw_elevation(world, shadow, img)
     img.complete()
 
 
 def draw_ocean_on_file(ocean, filename):
     height, width = ocean.shape
-    img = ImagePixelSetter(width, height, filename)
+    img = PNGWriter.rgba_from_dimensions(width, height, filename)
     draw_ocean(ocean, img)
     img.complete()
 
 
 def draw_precipitation_on_file(world, filename, black_and_white=False):
-    img = ImagePixelSetter(world.width, world.height, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
     draw_precipitation(world, img, black_and_white)
     img.complete()
 
 
 def draw_world_on_file(world, filename):
-    img = ImagePixelSetter(world.width, world.height, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
     draw_world(world, img)
     img.complete()
 
 
 def draw_temperature_levels_on_file(world, filename, black_and_white=False):
-    img = ImagePixelSetter(world.width, world.height, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
     draw_temperature_levels(world, img, black_and_white)
     img.complete()
 
 
 def draw_biome_on_file(world, filename):
-    img = ImagePixelSetter(world.width, world.height, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
     draw_biome(world, img)
     img.complete()
 
@@ -827,8 +798,7 @@ def draw_ancientmap_on_file(world, filename, resize_factor=1,
                             sea_color=(212, 198, 169, 255),
                             draw_biome=True, draw_rivers=True, draw_mountains=True, 
                             draw_outer_land_border=False, verbose=False):
-    img = ImagePixelSetter(world.width * resize_factor,
-                           world.height * resize_factor, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width * resize_factor, world.height * resize_factor, filename)
     draw_ancientmap(world, img, resize_factor, sea_color,
                     draw_biome, draw_rivers, draw_mountains, draw_outer_land_border, 
                     verbose)
@@ -836,12 +806,17 @@ def draw_ancientmap_on_file(world, filename, resize_factor=1,
 
 
 def draw_scatter_plot_on_file(world, filename):
-    img = ImagePixelSetter(512, 512, filename)
+    img = PNGWriter.rgba_from_dimensions(512, 512, filename)
     draw_scatter_plot(world, 512, img)
     img.complete()
 
 
 def draw_satellite_on_file(world, filename):
-    img = ImagePixelSetter(world.width, world.height, filename)
+    img = PNGWriter.rgba_from_dimensions(world.width, world.height, filename)
     draw_satellite(world, img)
+    img.complete()
+
+
+def draw_icecaps_on_file(world, filename):
+    img = PNGWriter.grayscale_from_array(world.icecap, filename, scale_to_range=True)
     img.complete()
