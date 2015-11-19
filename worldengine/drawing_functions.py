@@ -138,7 +138,7 @@ def _createmask(world, predicate, factor, odds=1):
             if predicate((xf, yf)) and rng.random_sample() < odds:
                 v = len(
                     world.tiles_around((xf, yf), radius=1,
-                                       predicate=predicate))
+                                       predicate=world.is_land))
                 if v > 5:
                     _mask.putpixel((x,y),(0,0,0,255))
     return _mask  
@@ -631,7 +631,12 @@ def draw_ancientmap(world, target, resize_factor=1,
                         world.on_tiles_around_factor(resize_factor, (x, y),
                                                      radius=r, action=unset_mask)
 
-    if draw_rivers:
-        print("Drawing rivers")
-        draw_rivers_on_image(world, target, resize_factor)
+                if world.is_land((fx, fy)) and (world.river_map[fx, fy] > 0.0):
+                    target.set_pixel(x, y, (0, 0, 128, 255))
+                if world.is_land((fx, fy)) and (world.lake_map[fx, fy] != 0):
+                    target.set_pixel(x, y, (0, 100, 128, 255))
+
+    #if draw_rivers:
+    #    print("Drawing rivers")
+    #    draw_rivers_on_image(world, target, resize_factor)
         
